@@ -279,7 +279,7 @@ FastAPI jest frameworkiem, w którym definiujemy aplikację, endpointy, modele d
 
 Uvicorn jest serwerem ASGI, który uruchamia aplikację FastAPI i nasłuchuje na określonym adresie oraz porcie. Sam plik Python nie wystarczy — potrzebujemy procesu serwera, który będzie przyjmował żądania HTTP.
 
-<details>
+<details markdown="block">
 <summary>Materiał pomocniczy: ASGI, uruchomienie i diagnostyka portu</summary>
 
 ### Co oznacza ASGI?
