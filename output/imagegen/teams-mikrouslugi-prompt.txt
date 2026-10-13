@@ -1,0 +1,9 @@
+Generated with the built-in image_gen tool.
+
+Use case: stylized-concept.
+Asset type: square Microsoft Teams group avatar for the university course "Projektowanie aplikacji webowych opartych o mikrousługi".
+Primary request: Create one polished distinctive course avatar, inspired by its syllabus: microservices, web APIs, synchronous and asynchronous communication, independent data stores and containerized services.
+Subject: a coherent compact isometric emblem: a stylized web browser window with a large simple code-bracket glyph at the upper center, connected via an API gateway junction to four separate chunky service cubes below and around it. One small cylinder beside a service suggests its independent database. Clean luminous connection paths with a few small message dots convey communication. The overall silhouette should clearly convey one web application made of interconnected independent modules.
+Style/medium: premium modern 3D editorial illustration, precise geometric forms, matte ceramic surfaces with subtle translucent accents, soft studio shadows, crisp clean edges. Restrained, elegant, academic technology aesthetic.
+Composition/framing: square 1:1, emblem centered, strong immediately recognizable silhouette, large simple shapes and clear hierarchy, all essential content contained inside the central 72 percent so it also survives a circular crop. Balanced generous negative space. Opaque softly graduated dark background, restrained cool illumination and contrasting bright module surfaces.
+Constraints: no written words, no letters, no numbers, no captions, no logos, no watermark, no tiny interface details, no additional decorative objects, no overly dense network, no poster layout. The code-bracket glyph is allowed. Deliver a finished image, not a mockup.
