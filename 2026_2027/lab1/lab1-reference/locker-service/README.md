@@ -1,6 +1,6 @@
 # Locker Service — rozwiązanie referencyjne LAB1
 
-To jest działające rozwiązanie przykładu wspólnego do analizy podczas LAB1. Pokazuje technikę, regułę biznesową i testy. Własny projekt zbuduj ze startera, używając własnej domeny. Wymagania zaliczenia określa [LAB1](../../lab1.md).
+To jest działające rozwiązanie przykładu wspólnego do analizy podczas LAB1. Pokazuje technikę, regułę biznesową i testy. Własny projekt zbuduj ze startera, używając własnej domeny. Wymagania zaliczenia określa [LAB1](../../).
 
 ## Problem i granice
 

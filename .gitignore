@@ -1,3 +1,9 @@
 priv/
 /priv
 tmp
+.venv/
+.lab2-check/
+__pycache__/
+*.pyc
+*.db
+.pytest_cache/

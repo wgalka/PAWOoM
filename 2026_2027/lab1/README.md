@@ -465,7 +465,7 @@ Przykład przechowuje dane w pamięci. Przy starcie tworzy paczkomat `KRK-1024` 
 W osobnym terminalu, zaczynając od katalogu głównego materiałów, przejdź do rozwiązania referencyjnego:
 
 ```powershell
-cd 2026_2027/lab1-reference/locker-service
+cd 2026_2027/lab1/lab1-reference/locker-service
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000

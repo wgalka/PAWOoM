@@ -2,8 +2,10 @@
 
 ## Instrukcje — 2026/2027
 
-- [Laboratorium 1](2026_2027/lab1.md)
-- [Starter LAB1 — ZIP](2026_2027/lab1-template.zip)
+- [Laboratorium 1](2026_2027/lab1/)
+- [Starter LAB1 — ZIP](2026_2027/lab1/lab1-template.zip)
+- [Laboratorium 2](2026_2027/lab2/)
+- [Kod pomocniczy LAB2 — ZIP](2026_2027/lab2/lab2-support.zip)
 
 ### Laboratorium
 

@@ -50,16 +50,14 @@
 
 ### Wykład
 
-Test wiedzy. Warunkiem zaliczenia jest uzyskanie minimum 50% punktów.
+Test wiedzy (kolokwium testowe z wykładu, efekty EK_01, EK_02, EK_05). Warunkiem zaliczenia jest uzyskanie minimum 50% punktów.
 
 ### Laboratorium
 
-Projekt rozwijany etapami. Ocena końcowa obejmuje:
+Warunkiem zaliczenia laboratorium jest **zaliczenie kolokwium oraz projektu**.
 
-- jakość i kompletność kodu — 60%,
-- jakość dokumentacji — 40%.
-
-W ramach projektu jedna osoba powinna zaimplementować co najmniej dwie różne mikrousługi oraz pozostałe wymagane komponenty systemu.
-
-> Uwaga organizacyjna: w pierwotnym sylabusie przy efektach laboratoryjnych pojawia się określenie „kolokwium”, natomiast szczegółowe warunki zaliczenia wskazują na ocenę projektu i dokumentacji. Na potrzeby zajęć przyjmujemy, że laboratorium jest zaliczane przez projekt praktyczny, obserwację pracy i ewentualne krótkie sprawdzenia cząstkowe.
-
+- **Kolokwium:** sprawdza wiedzę i umiejętności objęte zajęciami laboratoryjnymi (zgodnie z sylabusem weryfikuje efekty EK_03 i EK_04). Jego zaliczenie jest warunkiem koniecznym uzyskania oceny pozytywnej.
+- **Projekt:** rozwijany etapami. Każda osoba musi zaimplementować co najmniej dwie różne mikrousługi oraz pozostałe wymagane komponenty systemu.
+  Ocena projektu obejmuje:
+  - **jakość i kompletność kodu — 60%,**
+  - **jakość dokumentacji — 40%.**
