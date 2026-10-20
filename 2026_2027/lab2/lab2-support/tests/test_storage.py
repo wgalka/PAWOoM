@@ -31,6 +31,23 @@ class MemoryRedis:
         self.values.pop(key, None)
         self.expirations.pop(key, None)
 
+    def ping(self):
+        self.check()
+        return True
+
+    def close(self):
+        # No sockets to release; compatible with FastAPI lifespan cleanup.
+        pass
+
+
+def test_fake_supports_readiness_and_cleanup():
+    client = MemoryRedis()
+    assert client.ping() is True
+    client.down = True
+    with pytest.raises(ConnectionError):
+        client.ping()
+    client.close()  # Closing resources must also work during an outage.
+
 
 @pytest.fixture
 def setup(tmp_path):

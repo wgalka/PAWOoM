@@ -10,11 +10,23 @@ Python 3.12+, PowerShell. W tym katalogu:
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m pytest -q
-docker run --name lab2-redis -p 127.0.0.1:6379:6379 -d redis:7-alpine
 $env:DATABASE_URL = 'sqlite:///./demo.db'
-$env:REDIS_URL = 'redis://localhost:6379/0'
-$env:CACHE_PREFIX = 'lab2:demo'
+$env:CACHE_PREFIX = 'lab2:album12345:demo' # wpisz własny numer albumu
 $env:CACHE_TTL_SECONDS = '60'
+```
+
+Wybierz jeden wariant Redis. Dla lokalnego Dockera:
+
+```powershell
+docker run --name lab2-redis -p 127.0.0.1:6379:6379 -d redis:7-alpine
+$env:REDIS_URL = 'redis://localhost:6379/0'
+```
+
+Jeśli kontener już istnieje, użyj `docker start lab2-redis`. Alternatywnie użyj WSL2, Memurai lub serwera uczelnianego. Dla serwera uczelnianego ustaw `REDIS_URL` na pełny adres przekazany przez prowadzącego zamiast adresu lokalnego. Nie zapisuj sekretów w repozytorium ani nie zatrzymuj wspólnego serwera. Polecenia dla wariantów są w sekcji 3 instrukcji głównej.
+
+Po konfiguracji, w tym samym terminalu:
+
+```powershell
 .\.venv\Scripts\python.exe demo.py seed
 .\.venv\Scripts\python.exe demo.py get
 .\.venv\Scripts\python.exe demo.py get
@@ -22,9 +34,9 @@ $env:CACHE_TTL_SECONDS = '60'
 .\.venv\Scripts\python.exe demo.py get
 ```
 
-Redis wymaga działającego Dockera; istniejący kontener uruchom przez docker start lab2-redis. Możesz wskazać instancję prowadzącego i własny CACHE_PREFIX. Nie zatrzymuj wspólnego serwera.
-
 Oczekiwane wyniki: MISS, HIT, udane unieważnienie, MISS z nową nazwą. Każde polecenie uruchamia nowy proces. Baza jest plikiem demo.db w katalogu uruchomienia. Seed nie nadpisuje istniejącego rekordu.
+
+MISS na początku wymaga pustego cache. Jeśli pozostał wpis, usuń tylko `${env:CACHE_PREFIX}:locker:KRK-1024` zgodnie z instrukcją główną. Demo ponownie czyta konfigurację przy każdym wywołaniu. Własny Uvicorn trzeba zatrzymać i ponownie uruchomić w terminalu ze zmienionymi zmiennymi środowiska.
 
 ## Pliki i integracja
 
@@ -44,9 +56,11 @@ Testy nie wymagają Redis. Zamiennik nie symuluje upływu TTL. Wykonaj osobno:
 1. PING prawdziwego Redis.
 2. MISS → HIT oraz GET i TTL własnego klucza.
 3. Odczyt po wygaśnięciu TTL.
-4. Zatrzymanie własnego Redis → get daje BYPASS.
+4. Odłączenie klienta → get daje BYPASS: zapisz `$workingRedisUrl = $env:REDIS_URL`, następnie ustaw niedostępny adres, np. `$env:REDIS_URL = 'redis://127.0.0.1:9999/0'` (nieużywany port).
 5. Rename przy awarii → zapis pozostaje w bazie mimo cache_invalidated=False.
-6. Przywrócenie Redis i sprawdzenie możliwej starej wartości.
+6. Przywrócenie adresu przez `$env:REDIS_URL = $workingRedisUrl` i sprawdzenie starej wartości, a po wygaśnięciu TTL — aktualnej wartości z bazy.
+
+Aby powtarzalnie zaobserwować starą wartość, pozostaw serwer włączony, przed odłączeniem wypełnij cache i wykonaj kroki 4–6 przed upływem TTL. Kompletny scenariusz z tymczasowym TTL 300 sekund i przywróceniem konfiguracji jest w kroku 3 części A instrukcji głównej. Sam restart serwera może usunąć wpis, więc nie dowodzi poprawnego unieważniania.
 
 Nieudane unieważnienie może pozostawić starą wartość aż do TTL. Test failed_invalidation pokazuje to ograniczenie. Współbieżność nie jest rozwiązana: prosty cache-aside nie gwarantuje ścisłej spójności.
 
