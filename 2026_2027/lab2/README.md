@@ -47,13 +47,13 @@ Po laboratorium powinieneś:
 
 **Przepływ cache-aside — odczyt i zmiana danych:**
 
-```mermaid
+<pre class="mermaid">
 sequenceDiagram
     autonumber
     actor K as Klient
     participant U as Usługa
-    participant R as Redis<br/>cache
-    participant B as Baza danych<br/>źródło prawdy
+    participant R as Redis — cache
+    participant B as Baza danych — źródło prawdy
 
     rect rgb(239, 246, 255)
         Note over K,B: Odczyt — cache-aside
@@ -95,7 +95,21 @@ sequenceDiagram
             U-->>K: odpowiedź o zapisanej zmianie
         end
     end
-```
+</pre>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@12/dist/mermaid.esm.min.mjs";
+
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: "neutral",
+    securityLevel: "strict"
+  });
+
+  await mermaid.run({ querySelector: "pre.mermaid" });
+</script>
+
+Do wyrenderowania diagramu przeglądarka musi pobrać bibliotekę Mermaid z jsDelivr i wykonywać JavaScript. Przy zablokowanym skrypcie pozostaje czytelna definicja diagramu.
 
 Baza jest źródłem prawdy, ale przy HIT aplikacja jej nie sprawdza. Błędne unieważnianie może więc dać nieaktualną odpowiedź. Cache nadaje się np. do opisu sali; o przyznaniu ostatniego miejsca nie decyduj wyłącznie na podstawie kopii.
 
