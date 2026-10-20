@@ -1,0 +1,31 @@
+title: Projektowanie aplikacji webowych opartych o mikrousługi
+description: Instrukcje laboratoryjne — 2026/2027
+lang: pl-PL
+url: https://pawoom.lazysolutions.pl
+baseurl: ""
+
+remote_theme: wgalka/instructions-jekyll-theme@master
+
+plugins:
+  - jekyll-remote-theme
+  - jekyll-readme-index
+  - jekyll-seo-tag
+  - jekyll-github-metadata
+
+markdown: kramdown
+kramdown:
+  input: GFM
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+exclude:
+  - AGENTS.md
+  - priv
+  - tmp
+  - output
+  - Gemfile
+  - Gemfile.lock
