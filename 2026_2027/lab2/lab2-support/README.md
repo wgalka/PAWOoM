@@ -1,8 +1,8 @@
-# Kod pomocniczy — LAB2
+# Uruchomienie i integracja kodu pomocniczego LAB2
 
 To uzupełnienie projektu z LAB1. Rozpakuj obok swojej usługi. Nie nadpisuj całej aplikacji. Przykład operuje na paczkomacie z tekstowym ID KRK-1024; pokazuje mechanizm bazy i cache, nie pełną usługę HTTP ani reguły skrytek.
 
-## Uruchomienie
+## Konfiguracja zależności i uruchomienie przykładu
 
 Python 3.12+, PowerShell. W tym katalogu:
 
@@ -38,7 +38,7 @@ Oczekiwane wyniki: MISS, HIT, udane unieważnienie, MISS z nową nazwą. Każde 
 
 MISS na początku wymaga pustego cache. Jeśli pozostał wpis, usuń tylko `${env:CACHE_PREFIX}:locker:KRK-1024` zgodnie z instrukcją główną. Demo ponownie czyta konfigurację przy każdym wywołaniu. Własny Uvicorn trzeba zatrzymać i ponownie uruchomić w terminalu ze zmienionymi zmiennymi środowiska.
 
-## Pliki i integracja
+## Struktura pakietu i integracja z usługą studenta
 
 - database.py: wspólna baza modeli ORM i fabryka sesji (włącza PRAGMA foreign_keys=ON dla SQLite).
 - cache.py: adapter JSON; obsługuje GET, SET i DELETE, krótkie timeouty i brak ponowień.
@@ -50,7 +50,7 @@ Przenieś mechanizm do własnego app/database.py i app/cache.py. Modele domenowe
 
 Własna aplikacja musi także obsłużyć walidację i mapowanie wyjątków na HTTP. Demo nie waliduje wejścia jak FastAPI i nie jest gotowym rozwiązaniem do oddania.
 
-## Ograniczenia i testy ręczne
+## Testy ręczne i ograniczenia przykładu
 
 Testy nie wymagają Redis. Zamiennik nie symuluje upływu TTL. Wykonaj osobno:
 1. PING prawdziwego Redis.

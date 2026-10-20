@@ -1,4 +1,4 @@
-# LAB2 — Od pamięci procesu do trwałych danych i cache
+# LAB2 — Zapisywanie danych w bazie i obsługa cache
 
 ## Projektowanie aplikacji webowych opartych o mikrousługi
 
@@ -10,7 +10,7 @@
 
 **Rezultat:** dotychczasowa usługa z trwałymi danymi, cache wybranego odczytu i testami
 
-## 1. Cel laboratorium
+## 1. Cele i zakres laboratorium
 
 Po laboratorium powinieneś:
 
@@ -22,9 +22,7 @@ Po laboratorium powinieneś:
 - przetestować odczyt i zapis przy niedostępnym Redis,
 - wyjaśnić konsekwencje nieaktualnych danych.
 
-LAB2 realizuje temat sylabusa „Persystencja danych i cachowanie”. Rozwija EK_03 przez implementację na podstawie dokumentacji oraz przygotowuje dalsze EK_04 przez zachowanie właścicieli danych. Komunikacja kilku usług pozostaje kolejnym etapem.
-
-### Powiązanie z LAB1
+### Zachowanie ciągłości projektu z LAB1
 
 | LAB1 | Rozwinięcie na LAB2 |
 |---|---|
@@ -35,7 +33,7 @@ LAB2 realizuje temat sylabusa „Persystencja danych i cachowanie”. Rozwija EK
 | Świeża aplikacja w testach | Osobna baza i cache dla testów |
 | README i plan drugiej usługi | Dopisujesz decyzje o danych i cache |
 
-## 1.1. Minimum teorii przed rozpoczęciem kodowania
+## 1.1. Podstawowe pojęcia persystencji i cache
 
 **Persystencja** oznacza zachowanie danych poza czasem życia procesu. SQLite zapisuje bazę w pliku. Restart Uvicorna nie usuwa tego pliku.
 
@@ -47,19 +45,61 @@ LAB2 realizuje temat sylabusa „Persystencja danych i cachowanie”. Rozwija EK
 
 **TTL** (*Time To Live*) to czas życia wpisu. **HIT** oznacza znalezienie go, **MISS** — brak. W naszym przykładzie **BYPASS** oznacza pominięcie niedostępnego cache.
 
-**Cache-aside**:
+**Przepływ cache-aside — odczyt i zmiana danych:**
 
-```text
-Żądanie → cache
-          ├── HIT → odpowiedź z kopii
-          └── MISS → baza → zapis kopii z TTL → odpowiedź
+```mermaid
+sequenceDiagram
+    autonumber
+    actor K as Klient
+    participant U as Usługa
+    participant R as Redis<br/>cache
+    participant B as Baza danych<br/>źródło prawdy
 
-Zmiana → walidacja reguły → commit w bazie → usunięcie starej kopii
+    rect rgb(239, 246, 255)
+        Note over K,B: Odczyt — cache-aside
+        K->>U: GET /zasób/{id}
+        U->>R: GET klucz
+        alt HIT — wpis istnieje
+            R-->>U: wartość z cache
+            U-->>K: odpowiedź z cache
+        else MISS — brak wpisu
+            R-->>U: brak wpisu
+            U->>B: SELECT rekord
+            B-->>U: dane
+            U->>R: SET klucz, wartość, TTL
+            U-->>K: odpowiedź z bazy
+        else Redis niedostępny
+            R--xU: timeout
+            U->>B: SELECT rekord
+            B-->>U: dane
+            U-->>K: odpowiedź z bazy (BYPASS)
+        end
+    end
+
+    rect rgb(241, 250, 238)
+        Note over K,B: Zmiana — commit w bazie przed unieważnieniem cache
+        K->>U: PUT/PATCH /zasób/{id}
+        U->>U: Walidacja reguły biznesowej
+        alt Reguła odrzucona
+            U-->>K: błąd — stan bazy bez zmian
+        else Reguła spełniona
+            U->>B: Zapis zmiany i COMMIT
+            B-->>U: zmiana zatwierdzona
+            U->>R: DEL klucz
+            alt Unieważnienie udane
+                R-->>U: wpis usunięty
+            else Redis niedostępny
+                R--xU: błąd lub timeout
+                Note over U,R: Zapis w bazie pozostaje zatwierdzony; stary wpis może być dostępny do wygaśnięcia TTL
+            end
+            U-->>K: odpowiedź o zapisanej zmianie
+        end
+    end
 ```
 
 Baza jest źródłem prawdy, ale przy HIT aplikacja jej nie sprawdza. Błędne unieważnianie może więc dać nieaktualną odpowiedź. Cache nadaje się np. do opisu sali; o przyznaniu ostatniego miejsca nie decyduj wyłącznie na podstawie kopii.
 
-### Pytania przed przykładem
+### Analiza odpowiedzialności za dane
 
 Dotyczą znanego z LAB1 systemu paczkomatów:
 
@@ -72,29 +112,31 @@ Decyzje o własnym cache podejmiesz w części B, po analizie przykładu.
 
 ---
 
-## 2. Zasady pracy
+## 2. Organizacja realizacji laboratorium
 
-Tak jak na [LAB1](../lab1/), mamy krótki przykład wspólny i główną pracę we własnym projekcie. Nie trzeba odtwarzać całego przykładu przed rozpoczęciem implementacji.
+LAB2 obejmuje krótki przykład wspólny oraz pracę nad usługą rozwijaną w LAB1. Przykład służy poznaniu mechanizmu; pełne odtworzenie przykładowej usługi `Locker Service` nie jest wymagane.
 
-Zachowaj repozytorium, temat, port i fabrykę aplikacji `create_app()` z LAB1. Zapisz działający etap w Git przed przebudową. Rozwijasz pierwszą usługę; nie musisz jeszcze uruchamiać drugiej. Co najmniej dwie różne mikrousługi na osobę pozostają wymaganiem całego projektu semestralnego.
+Praca jest kontynuowana w tym samym repozytorium. Należy zachować temat, kontrakt API, reguły biznesowe i fabrykę `create_app()` z LAB1. Przed przebudową magazynu danych należy utworzyć commit działającej wersji. Port z LAB1 można zachować; w razie konfliktu należy wybrać wolny port i odpowiednio zmienić polecenia.
 
-Proponowany podział 120 minut: 10 minut teorii, 20 minut przykładu, 15 minut decyzji, 40 minut własnej bazy, 25 minut cache i testów, 10 minut podsumowania. Redis przygotuj wcześniej. Przy krótszym bloku więcej implementacji wykonasz po zajęciach. Termin oddania ustala prowadzący.
+LAB2 dotyczy pierwszej usługi, więc nie wymaga uruchamiania drugiej. Wymóg co najmniej dwóch różnych mikrousług na osobę dotyczy całego projektu semestralnego.
 
-Punkt kontrolny na koniec zajęć: trwały zapis we własnej usłudze i pierwszy scenariusz MISS → HIT. Pełne testy awarii i dokumentację możesz dokończyć po zajęciach; nadal należą do wymagań oddawanego etapu.
+**Proponowany harmonogram (120 minut):** 10 minut teorii, 20 minut przykładu, 15 minut decyzji projektowych, 40 minut pracy nad bazą, 25 minut pracy nad cache i testami oraz 10 minut podsumowania. Redis należy przygotować przed zajęciami. Przy bloku 90-minutowym część implementacji trzeba dokończyć po zajęciach; termin oddania określa prowadzący.
 
-Pracując w parze, zmieniajcie role osoby piszącej i sprawdzającej. Każda osoba wyjaśnia kod i wykonuje drobną zmianę przy odbiorze.
+**Punkt kontrolny na koniec zajęć:** trwały zapis we własnej usłudze oraz pierwszy scenariusz MISS → HIT. Testy awarii i dokumentację można dokończyć po zajęciach, ale pozostają wymaganiami oddawanego etapu.
 
-### Korzystanie z AI
+W pracy w parach należy zmieniać role osoby implementującej i sprawdzającej. Każda osoba powinna umieć wyjaśnić rozwiązanie i samodzielnie wprowadzić drobną zmianę podczas odbioru.
+
+### Weryfikacja kodu wspomaganego przez AI
 
 AI jest dozwolone na zasadach LAB1. Dopisz do README zakres pomocy i sposób weryfikacji albo „nie korzystano”. Wygenerowany kod musi przejść testy; decyzje o modelu, transakcjach i cache musisz umieć wyjaśnić.
 
 ---
 
-## 3. Przygotowanie środowiska
+## 3. Przygotowanie środowiska i zależności
 
 Polecenia w instrukcji są przeznaczone dla PowerShella na systemie Windows.
 
-### Wymagane narzędzia
+### Instalacja i konfiguracja wymaganych narzędzi
 
 Przed rozpoczęciem upewnij się, że masz przygotowane:
 
@@ -105,14 +147,14 @@ Przed rozpoczęciem upewnij się, że masz przygotowane:
    - **Opcja A (rekomendowana) — Docker Desktop:** pobierz z [docker.com](https://www.docker.com/products/docker-desktop/) lub zainstaluj przez `winget install Docker.DockerDesktop`. Dla wariantu z backendem WSL2 potrzebujesz włączonej wirtualizacji sprzętowej i skonfigurowanego WSL2.
    - **Opcja B — WSL2 (bez Dockera):** w terminalu Ubuntu/Debian w WSL zainstaluj i uruchom: `sudo apt update && sudo apt install redis-server && sudo service redis-server start`.
    - **Opcja C — serwis lokalny Windows:** np. Memurai (`winget install Memurai.Memurai`).
-   - **Opcja D — serwer uczelniany:** skorzystaj z instancji przygotowanej przez prowadzącego na zajęciach.
    - *Uwaga:* testy automatyczne w projekcie korzystają z pamięciowej atrapy `MemoryRedis`, więc nie wymagają działającego Dockera ani serwera Redis.
 3. **Przeglądarka bazy SQLite (opcjonalnie, zalecane):**
    - Pozwala wygodnie podglądać tabele i rekordy w plikach `.db`:
      - Rozszerzenie do VS Code: **SQLite Viewer** (Florian Klampfer) — bezpośredni podgląd tabel w edytorze.
      - Samodzielny program: **DB Browser for SQLite** (`winget install SQLiteBrowser.SQLiteBrowser`).
+     - **DataGrip** (JetBrains) — samodzielny klient bazodanowy do przeglądania plików SQLite i wykonywania zapytań.
 
-### Pobranie kodu pomocniczego
+### Pobranie i struktura kodu pomocniczego
 
 Pobierz [kod pomocniczy LAB2 — ZIP](lab2-support.zip) i rozpakuj **obok własnego projektu**:
 
@@ -127,23 +169,24 @@ Pobierz [kod pomocniczy LAB2 — ZIP](lab2-support.zip) i rozpakuj **obok własn
 
 Paczka pokazuje mechanizm na danych paczkomatu. Nie jest pełnym zamiennikiem `Locker Service` z LAB1: nie udostępnia HTTP ani operacji skrytek. Własne API i reguły rozwijasz w swoim repozytorium.
 
-### Obsługa Redis w zależności od środowiska
+### Konfiguracja Redis w wybranym środowisku
 
 W dalszej części instrukcji wykonasz operacje sprawdzenia połączenia (`PING`), usunięcia klucza (`DEL`), sprawdzenia czasu życia (`TTL`) oraz symulacji awarii (zatrzymania i wznowienia serwera). Użyj poleceń właściwych dla wybranego środowiska:
 
-| Operacja | Opcja A: Docker Desktop | Opcja B: WSL2 | Opcja C: Memurai / Windows | Opcja D: Serwer uczelniany |
-|---|---|---|---|---|
-| **Uruchomienie serwera** | `docker run --name lab2-redis -p 127.0.0.1:6379:6379 -d redis:7-alpine` | `wsl sudo service redis-server start` | Działa automatycznie jako usługa Windows | Uruchomiony przez prowadzącego |
-| **Test połączenia (PING)** | `docker exec lab2-redis redis-cli ping` | `wsl redis-cli ping` | `memurai-cli ping` | `redis-cli -u $env:REDIS_URL ping` |
-| **Usunięcie klucza (DEL)** | `docker exec lab2-redis redis-cli DEL <klucz>` | `wsl redis-cli DEL <klucz>` | `memurai-cli DEL <klucz>` | `redis-cli -u $env:REDIS_URL DEL <klucz>` |
-| **Czas życia klucza (TTL)** | `docker exec lab2-redis redis-cli TTL <klucz>` | `wsl redis-cli TTL <klucz>` | `memurai-cli TTL <klucz>` | `redis-cli -u $env:REDIS_URL TTL <klucz>` |
-| **Zatrzymanie (awaria)** | `docker stop lab2-redis` | `wsl sudo service redis-server stop` | `Stop-Service Memurai` (PowerShell jako Admin) | Nie zatrzymuj serwera; odłącz klienta według kroku 3 części A |
-| **Wznowienie po awarii** | `docker start lab2-redis` | `wsl sudo service redis-server start` | `Start-Service Memurai` (PowerShell jako Admin) | Przywróć zapisany adres według kroku 3 części A |
+| Operacja | Opcja A: Docker Desktop | Opcja B: WSL2 | Opcja C: Memurai / Windows |
+|---|---|---|---|
+| **Uruchomienie serwera** | `docker run --name lab2-redis -p 127.0.0.1:6379:6379 -d redis:7-alpine` | `wsl sudo service redis-server start` | Działa automatycznie jako usługa Windows |
+| **Test połączenia (PING)** | `docker exec lab2-redis redis-cli ping` | `wsl redis-cli ping` | `memurai-cli ping` |
+| **Usunięcie klucza (DEL)** | `docker exec lab2-redis redis-cli DEL <klucz>` | `wsl redis-cli DEL <klucz>` | `memurai-cli DEL <klucz>` |
+| **Czas życia klucza (TTL)** | `docker exec lab2-redis redis-cli TTL <klucz>` | `wsl redis-cli TTL <klucz>` | `memurai-cli TTL <klucz>` |
+| **Zatrzymanie (awaria)** | `docker stop lab2-redis` | `wsl sudo service redis-server stop` | `Stop-Service Memurai` (PowerShell jako Admin) |
+| **Wznowienie po awarii** | `docker start lab2-redis` | `wsl sudo service redis-server start` | `Start-Service Memurai` (PowerShell jako Admin) |
 
-Po komendzie ping oczekuj odpowiedzi `PONG`. Jeśli kontener już istnieje, użyj `docker start lab2-redis`. Polecenia uczelniane wymagają klienta `redis-cli` (możesz uruchomić go przez `wsl redis-cli`). Na serwerze współdzielonym nie czyść cudzych kluczy ani nie zatrzymuj serwera.
+Po komendzie ping oczekuj odpowiedzi `PONG`. Jeśli kontener już istnieje, użyj `docker start lab2-redis`.
+W poleceniach `DEL` i `TTL` zastąp `<klucz>` pełną nazwą swojego wpisu; w przykładzie paczkomatu użyj zmiennej `$demoKey` zdefiniowanej w kroku 1. `DEL` zwraca `1`, jeśli usunął wpis, i `0`, jeśli klucz nie istniał.
 
 
-### Uruchomienie paczki
+### Instalacja zależności i uruchomienie testów przykładu
 
 W terminalu przejdź do rozpakowanego katalogu z `requirements.txt`:
 
@@ -158,15 +201,15 @@ $env:CACHE_TTL_SECONDS = '60'
 
 Nie trzeba aktywować środowiska. Zmienne obowiązują w bieżącym terminalu. Testy automatyczne używają kontrolowanego zamiennika Redis; rzeczywiste połączenie sprawdzisz poniżej.
 
-Przed uruchomieniem demo ustaw **jeden** adres: dla lokalnego Redis `$env:REDIS_URL = 'redis://localhost:6379/0'`, a dla uczelnianego adres przekazany przez prowadzącego (z właściwym portem i ewentualnym uwierzytelnianiem). Nie nadpisuj go później adresem lokalnym. Sekretów nie zapisuj w repozytorium. Przy zmianie z demo na własną usługę nadaj jej odrębny prefiks, np. `lab2:album12345:room-service`.
+Przed uruchomieniem demo ustaw adres lokalnego Redis: `$env:REDIS_URL = 'redis://localhost:6379/0'`. Nie nadpisuj go później innym adresem. Sekretów nie zapisuj w repozytorium. Przy zmianie z demo na własną usługę nadaj jej odrębny prefiks, np. `lab2:album12345:room-service`.
 
 `demo.py` czyta zmienne przy każdym uruchomieniu. Działający Uvicorn nie przejmuje zmian zmiennych z terminala: zatrzymaj go przez Ctrl+C i uruchom ponownie **w terminalu z nową konfiguracją**. Samo `--reload` tego nie zapewnia.
 
 ---
 
-## 4. Część A — przykład wspólny
+## 4. Część A — analiza persystencji i cache na przykładzie
 
-### Co zachowujemy z LAB1?
+### Zachowanie kontraktu i identyfikatorów z LAB1
 
 Paczkomat nadal ma tekstowy identyfikator `KRK-1024` oraz pola `name`, `address`, `city`, `status`. Nie zmieniamy typu ID ani JSON ze względu na dodanie bazy.
 
@@ -184,7 +227,7 @@ class LockerRow(Base):
 
 Pełne importy i konfiguracja są w paczce. Klucz główny zapewnia unikalność ID. Zwykły indeks sam nie zapewnia unikalności. SQLite nie egzekwuje długości `String(n)` jak walidator — zachowaj ograniczenia Pydantic.
 
-### Krok 1 — zapis i odczyt
+### Krok 1 — weryfikacja zapisu i odczytu w bazie
 
 ```powershell
 .\.venv\Scripts\python.exe demo.py seed
@@ -202,10 +245,9 @@ $demoKey = "${env:CACHE_PREFIX}:locker:KRK-1024"
 docker exec lab2-redis redis-cli DEL $demoKey
 # WSL2: wsl redis-cli DEL $demoKey
 # Memurai: memurai-cli DEL $demoKey
-# Serwer uczelniany: redis-cli -u $env:REDIS_URL DEL $demoKey
 ```
 
-### Krok 2 — zmiana i unieważnienie
+### Krok 2 — aktualizacja danych i unieważnienie cache
 
 ```powershell
 .\.venv\Scripts\python.exe demo.py rename --name 'Nowa Nazwa'
@@ -231,7 +273,7 @@ Poprawne wyjście z bloku zatwierdza zmianę, a wyjątek wycofuje transakcję. `
 
 Zmiana nazwy jest ćwiczeniem technicznym. Nie zastępuje reguły przejść statusów skrytek z LAB1.
 
-### Krok 3 — TTL i awaria
+### Krok 3 — weryfikacja TTL i obsługi niedostępności cache
 
 ```powershell
 # Sprawdzenie TTL (Docker):
@@ -242,7 +284,7 @@ docker exec lab2-redis redis-cli TTL $demoKey
 
 TTL podaje pozostałe sekundy; `-2` oznacza brak klucza, `-1` brak terminu wygaśnięcia. Po wygaśnięciu kolejny odczyt daje MISS.
 
-Zatrzymaj **własną lokalną instancję** (nie zatrzymuj wspólnego serwera uczelnianego):
+Zatrzymaj **własną lokalną instancję Redis**:
 
 ```powershell
 # Docker:
@@ -251,13 +293,15 @@ docker stop lab2-redis
 .\.venv\Scripts\python.exe demo.py rename --name 'Zapis bez cache'
 docker start lab2-redis
 
-# WSL2 odpowiednik: wsl sudo service redis-server stop / start
-# Memurai odpowiednik: Stop-Service Memurai / Start-Service Memurai
+# WSL2 odpowiednik: wsl sudo service redis-server stop
+# Po teście: wsl sudo service redis-server start
+# Memurai odpowiednik: Stop-Service Memurai
+# Po teście: Start-Service Memurai
 ```
 
 Odczyt daje BYPASS i dane z bazy. Zapis zostaje zatwierdzony mimo nieudanego unieważnienia. Zatrzymanie serwera nie gwarantuje zachowania starych wpisów po restarcie.
 
-Aby odtworzyć **stary wpis po nieudanym unieważnieniu**, pozostaw Redis uruchomiony i odłącz tylko klienta. Ten wariant działa także na serwerze uczelnianym. Wykonaj całość w jednym terminalu, w czasie krótszym niż 300 sekund:
+Aby odtworzyć **stary wpis po nieudanym unieważnieniu**, pozostaw Redis uruchomiony i odłącz tylko klienta. Wykonaj całość w jednym terminalu, w czasie krótszym niż 300 sekund:
 
 ```powershell
 $workingRedisUrl = $env:REDIS_URL
@@ -281,7 +325,7 @@ Przed odłączeniem potwierdź udane unieważnienie oraz MISS; jeśli widzisz BY
 
 **Ograniczenie:** po przywróceniu łączności stary wpis może istnieć aż do wygaśnięcia TTL. W paczce jest test tego przypadku. Commit w bazie i usunięcie klucza Redis nie są jedną transakcją. Prosty cache-aside nie zapewnia też ścisłej spójności przy równoległych zapisach i odczytach.
 
-### Pytania po przykładzie
+### Analiza skutków awarii Redis
 
 1. Dlaczego dane przetrwały uruchomienie nowego procesu?
 2. Co pokazuje HIT, a czego nie dowodzi o wydajności?
@@ -291,11 +335,11 @@ Przed odłączeniem potwierdź udane unieważnienie oraz MISS; jeśli widzisz BY
 
 ---
 
-## 5. Część B — rozbuduj własną usługę z LAB1
+## 5. Część B — rozbudowa własnej usługi z LAB1
 
 To główna część laboratorium. Zastosuj mechanizm z przykładu do dotychczasowej domeny.
 
-### Krok 1 — sprawdź punkt wyjścia
+### Krok 1 — weryfikacja stanu początkowego usługi
 
 Uruchom dotychczasowe testy i usługę:
 
@@ -308,7 +352,7 @@ W drugim terminalu sprawdź health i własne endpointy. Zmień dane przez API, p
 
 Zachowaj kontrakt: metody, ścieżki, ID, JSON i błędy. Uzupełniasz README z LAB1.
 
-### Krok 2 — zaprojektuj dane
+### Krok 2 — zaprojektowanie modelu danych
 
 Zachowaj aktora, słownik domeny i regułę biznesową. Uzupełnij:
 
@@ -324,7 +368,7 @@ Zachowaj aktora, słownik domeny i regułę biznesową. Uzupełnij:
 
 Wszystkie dotychczasowe operacje dotyczące przenoszonych danych muszą korzystać z tego samego trwałego magazynu. Baza obok nadal używanego słownika nie spełnia tego wymagania.
 
-### Krok 3 — podłącz bazę bez zmiany API
+### Krok 3 — podłączenie bazy z zachowaniem kontraktu API
 
 Dopisz do istniejących zależności `SQLAlchemy>=2.0,<2.1` i `redis>=5,<7`. Zachowaj zależności LAB1 i zainstaluj zaktualizowany plik.
 
@@ -399,7 +443,7 @@ Ustaw `CACHE_PREFIX` przed startem; w testach ustawisz go przez `monkeypatch`. T
 
 `create_all` tworzy brakujące tabele, ale nie aktualizuje istniejących kolumn. Nie kasuj bazy przy każdym uruchomieniu. Migracje Alembic są rozszerzeniem.
 
-### Krok 4 — przenieś operacje i regułę
+### Krok 4 — przeniesienie operacji i reguły biznesowej do bazy
 
 Zaimplementuj listę, szczegóły i dotychczasowy zapis. Jeśli LAB1 miał tylko POST, dodaj jedną uzasadnioną modyfikację albo usunięcie do testowania unieważnienia. Przy samym PATCH wystarczą dane początkowe, które nie nadpisują istniejącego stanu.
 
@@ -411,7 +455,7 @@ Zachowaj istniejący `response_model`. Do cache wkładaj serializowaną odpowied
 
 **Dowód:** zapis → GET → zatrzymanie Uvicorna → uruchomienie → GET. Zmiana ma przetrwać. Wykonaj odczyt bez starego cache, aby dowieść zapisu do bazy.
 
-### Krok 5 — podłącz cache jednego odczytu
+### Krok 5 — zastosowanie cache-aside dla wybranego odczytu
 
 Wykorzystaj `JsonCache` albo napisz własny adapter. Dostosuj klucze do domeny: `JsonCache(client, prefix="lab2:12345:room-service", resource_name="room")` tworzy np. `lab2:12345:room-service:room:R-12`. Domyślny `resource_name="locker"` dotyczy wyłącznie przykładu paczkomatów.
 
@@ -474,13 +518,13 @@ Dlaczego ta kolejność? Jeśli transakcja w bazie zostanie wycofana przez błą
 
 Redis nie musi być szybszy od lokalnego SQLite dla jednego rekordu. Wykaż pominięcie odczytu repozytorium przy HIT; pomiar czasu jest rozszerzeniem.
 
-### Krok 6 — sprawdź awarie
+### Krok 6 — weryfikacja zachowania podczas awarii cache
 
 Obsłuż brak Redis podczas odczytu, zapisywania kopii i unieważniania. Ustaw krótkie timeouty i ogranicz ponowienia, jak w paczce. Błąd cache nie może cofnąć już zatwierdzonej operacji bazy.
 
 Pokaż normalny scenariusz zmiany i scenariusz nieudanego unieważnienia. Opisz możliwość starej wartości po powrocie Redis. Jeśli domena nie toleruje opóźnienia, wybierz do cache inny rodzaj danych.
 
-#### Rozszerzenie: kontrola gotowości w `/ready`
+#### Zadanie rozszerzające — implementacja endpointu gotowości `/ready`
 
 Zachowaj `/health` i jego kontrakt z LAB1. Opcjonalnie dodaj osobny `/ready`: sprawna baza oznacza gotowość, a niedostępny opcjonalny cache — stan `degraded`, nadal z HTTP 200. Awaria bazy daje 503. Fragment korzysta z zasobów powyższego szkieletu; umieść endpoint wewnątrz fabryki. To rozszerzenie, nie dodatkowy warunek zaliczenia.
 
@@ -519,7 +563,7 @@ def readiness(request: Request):
     )
 ```
 
-### Praca z dokumentacją — wymaganie EK_03
+### Wykorzystanie dokumentacji — wymaganie EK_03
 
 Wykorzystaj minimum dwa fragmenty oficjalnej dokumentacji:
 
@@ -531,7 +575,7 @@ W README zapisz problem, odnośnik, zastosowanie i sposób sprawdzenia. Sam wyka
 
 > **Wskazówka:** Szczegółowy przewodnik dotyczący pracy z agentami AI, plików `SKILL.md` oraz przykładowych promptów dla SQLAlchemy znajdziesz w [Załączniku na końcu instrukcji](#załącznik-praca-z-agentami-ai-i-dokumentacja-sqlalchemy).
 
-### Krok 7 — napisz testy
+### Krok 7 — implementacja i uruchomienie testów
 
 Dostosuj testy LAB1: scenariusze API pozostają, ale fixture tworzy oddzielną bazę w `tmp_path`. Nowe `create_app()` nie oznacza już automatycznie pustego stanu — decyduje adres bazy.
 
@@ -580,7 +624,7 @@ Ręcznie sprawdź rzeczywisty Redis: MISS → HIT, wygaśnięcie TTL, restart Uv
 
 Używaj własnego prefiksu także w testach; nie wykonuj `FLUSHALL` ani `FLUSHDB` na wspólnym serwerze. Zamiennik z paczki nie symuluje upływu TTL, więc tego zachowania nie potwierdza.
 
-### Krok 8 — uzupełnij README
+### Krok 8 — uzupełnienie dokumentacji projektu
 
 Dopisz sekcje z `README-LAB2-template.md`, zachowując dokumentację LAB1:
 
@@ -594,7 +638,7 @@ Dopisz sekcje z `README-LAB2-template.md`, zachowując dokumentację LAB1:
 
 ---
 
-## 6. Porównanie rozwiązań
+## 6. Porównanie pamięci procesu, bazy danych i cache
 
 | Cecha | Pamięć procesu z LAB1 | SQLite | Redis jako cache |
 |---|---|---|---|
@@ -616,31 +660,31 @@ Osobny właściciel danych nie wymaga osobnego fizycznego serwera. Istotne są k
 
 ---
 
-## 7. Checkpointy i rozmowa techniczna
+## 7. Weryfikacja efektów i rozmowa techniczna
 
-### Checkpoint A — ciągłość projektu
+### Checkpoint A — zachowanie ciągłości projektu
 
 Pokaż temat, API, regułę i plan drugiej usługi z LAB1. Uzasadnij zmiany.
 
-### Checkpoint B — trwałość i reguła
+### Checkpoint B — weryfikacja trwałości i reguły biznesowej
 
 Pokaż zapis po restarcie i odrzuconą operację bez zmiany danych. Wskaż commit i rollback.
 
-### Checkpoint C — cache
+### Checkpoint C — weryfikacja działania cache
 
 Pokaż MISS, HIT, TTL i aktualną odpowiedź po poprawnym unieważnieniu. Wyjaśnij skutki nieudanego unieważnienia.
 
-### Checkpoint D — testy i awaria
+### Checkpoint D — weryfikacja testów i obsługi awarii
 
 Uruchom testy, wyjaśnij izolację i pokaż działanie API bez Redis.
 
-### Checkpoint E — własny kod
+### Checkpoint E — samodzielna modyfikacja kodu
 
 Każda osoba wykonuje drobną zmianę, np. zmienia TTL i odpowiadającą mu asercję albo dodaje test brakującego zasobu. Wyjaśnia użycie dokumentacji i weryfikację kodu z AI.
 
 ---
 
-## 8. Kryteria zaliczenia
+## 8. Kryteria zaliczenia etapu LAB2
 
 Punktacja dotyczy etapu projektu i, jak na LAB1, zachowuje proporcję kod 60 / dokumentacja 40. Nie zmienia warunków zaliczenia przedmiotu.
 
@@ -670,7 +714,7 @@ Brak warunku minimum oznacza konieczność poprawy mimo uzyskania 50 punktów.
 
 ---
 
-## 9. Oddanie pracy
+## 9. Oznaczenie i przekazanie wersji projektu LAB2
 
 Oddaj kolejną wersję **tego samego repozytorium** z `app`, `tests`, `requirements.txt`, README i `.gitignore`. Oznacz commit i tag etapu LAB2. Nie dołączaj środowiska, lokalnych baz, cache Pythona ani sekretów.
 
@@ -694,7 +738,7 @@ Dla chętnych: PostgreSQL, migracja Alembic, pomiar liczby zapytań i czasu, cac
 
 ---
 
-## Załącznik: Praca z agentami AI i dokumentacja SQLAlchemy
+## 10. Korzystanie z asystentów AI i dokumentacji SQLAlchemy
 
 **Status weryfikacji: 19.10.2026.** W sprawdzonej [oficjalnej dokumentacji SQLAlchemy](https://docs.sqlalchemy.org/en/20/) i [repozytorium projektu](https://github.com/sqlalchemy/sqlalchemy) nie potwierdzono oficjalnego, gotowego do zainstalowania pliku `SKILL.md` do pracy z SQLAlchemy w aplikacji studenta. Nie znaleziono również głównego `AGENTS.md` w repozytorium. Nie traktuj skilli znalezionych w innych repozytoriach jako materiałów autorów SQLAlchemy.
 
@@ -708,7 +752,7 @@ Te nazwy oznaczają różne rzeczy:
 
 Obsługa i lokalizacja tych plików zależy od używanego narzędzia. Samo pobranie pliku albo nazwanie go `SKILL.md` nie gwarantuje, że agent go odczyta. Instrukcje z repozytorium biblioteki mogą dotyczyć rozwijania samej biblioteki, a nie używania jej w Twojej aplikacji.
 
-### Jak wykorzystać oficjalną dokumentację na LAB2?
+### Wykorzystanie oficjalnej dokumentacji podczas LAB2
 
 1. Otwórz [dokumentację SQLAlchemy 2.0](https://docs.sqlalchemy.org/en/20/), zgodną z zakresem `SQLAlchemy>=2.0,<2.1` przyjętym w materiałach.
 2. W rozmowie z agentem przekaż odnośnik do konkretnego zagadnienia, np. [sesji i transakcji](https://docs.sqlalchemy.org/en/20/orm/session_basics.html). Poproś o przeczytanie strony przed zmianami. Jeśli narzędzie nie ma dostępu do strony, przekaż odpowiedni fragment jako kontekst.
@@ -729,7 +773,7 @@ To przekazuje agentowi kontekst i konkretne kryteria pracy. Nie instaluje biblio
 
 Nie trzeba dodawać nowego pliku do projektu. Jeśli używany agent obsługuje projektowy `AGENTS.md`, możesz w głównym katalogu własnej usługi, obok README, zapisać własne zasady LAB2 i odnośniki do dokumentacji. Jeśli plik już istnieje, uzupełnij go zamiast nadpisywać. Oznacz te zasady jako instrukcje projektu studenckiego, nie oficjalny materiał SQLAlchemy. Sposób automatycznego odczytu sprawdź w dokumentacji swojego narzędzia.
 
-### Nieoficjalne skille SQLAlchemy — opcjonalna pomoc
+### Ocena nieoficjalnych materiałów wspierających pracę z SQLAlchemy
 
 Poniższe materiały są tworzone przez społeczność, **nie przez zespół SQLAlchemy**. To propozycje do samodzielnej oceny, a nie wymagane zależności LAB2. Sprawdzono ich treść 19.10.2026; linki do gałęzi `main` mogą później prowadzić do zmienionych wersji.
 
@@ -740,7 +784,7 @@ Poniższe materiały są tworzone przez społeczność, **nie przez zespół SQL
 
 **Uwaga:** skill zawiera instrukcje dla agenta i może wpływać na edycję plików oraz wykonywanie poleceń. Może też zawierać błędy, uproszczenia albo zalecenia niezgodne z wersją bibliotek w Twoim projekcie. Nie jest gwarancją poprawnego kodu ani audytowanym dodatkiem. Przed użyciem przeczytaj `SKILL.md`, powiązane instrukcje i ewentualne skrypty. Nie uruchamiaj bez sprawdzenia instalatorów, nie przekazuj sekretów i nie akceptuj kasowania bazy jako sposobu naprawy migracji. W razie sprzeczności sprawdź oficjalną dokumentację i zachowaj wymagania LAB2.
 
-### Jak dodać i uruchomić wybrany skill?
+### Instalacja i uruchomienie wybranego materiału wspierającego
 
 Wybierz jeden materiał; nie musisz instalować obu.
 

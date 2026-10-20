@@ -6,4 +6,6 @@ tmp
 __pycache__/
 *.pyc
 *.db
-.pytest_cache/
+.pytest_cache/
+.agents
+

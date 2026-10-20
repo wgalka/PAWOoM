@@ -1,8 +1,8 @@
-# Uzupełnienie README — LAB2
+# Dokumentowanie zmian wprowadzonych w LAB2
 
 Dopisz poniższe sekcje do README projektu z LAB1. Nie usuwaj opisu domeny, reguły, API ani planu drugiej usługi.
 
-## Zmiany i decyzje
+## Opis zmian i decyzji projektowych
 
 - Co zachowano z LAB1: ...
 - Co zmieniono i dlaczego: ...
@@ -12,11 +12,11 @@ Dopisz poniższe sekcje do README projektu z LAB1. Nie usuwaj opisu domeny, regu
 - Odczyt objęty cache, uzasadnienie, dopuszczalna nieaktualność: ...
 - Prefiks, klucz, TTL, unieważnianie po zapisie: ...
 
-## Uruchomienie
+## Instrukcja instalacji i uruchomienia
 
 Podaj wymagania, instalację, DATABASE_URL, REDIS_URL, prefiks i TTL, port oraz polecenia uruchomienia API i testów. Wskaż lokalizację bazy i sposób inicjalizacji schematu. Nie wpisuj sekretów.
 
-## Dowody
+## Scenariusze weryfikacji i wyniki
 
 | Scenariusz | Stan początkowy i żądanie | Oczekiwany wynik | Wynik rzeczywisty | Reset |
 |---|---|---|---|---|
@@ -30,11 +30,11 @@ Podaj wymagania, instalację, DATABASE_URL, REDIS_URL, prefiks i TTL, port oraz 
 
 Wskaż cztery własne testy LAB2 i zachowane testy LAB1. Oddziel testy z zamiennikiem od ręcznych prób z rzeczywistym Redis.
 
-## Porównanie i ograniczenia
+## Porównanie rozwiązań i ograniczenia
 
 Odpowiedz na pytania z sekcji 6 instrukcji LAB2. Opisz nieudane unieważnianie, współbieżność i zmiany schematu. Wyjaśnij, czy użycie cache jest właściwe dla odbiorcy Twoich danych.
 
-## Dokumentacja i autorzy
+## Wykorzystana dokumentacja i wkład autorów
 
 | Źródło | Problem | Zastosowanie | Weryfikacja |
 |---|---|---|---|

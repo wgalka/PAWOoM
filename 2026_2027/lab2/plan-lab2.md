@@ -1,8 +1,8 @@
-# Plan LAB2 — persystencja danych i cache
+# Plan realizacji LAB2 — persystencja danych i cache
 
 > Plan roboczy poprzedzający instrukcję. Aktualny zakres, kryteria i sposób pracy określa [LAB2](README.md). Materiały pomocnicze są dostępne w [ZIP](lab2-support.zip); Redis jest wymaganym elementem ćwiczenia, a PostgreSQL i Alembic pozostają rozszerzeniami.
 
-## Temat
+## Zakres tematyczny
 
 **Od danych w pamięci do trwałej mikrousługi: baza danych i cache**
 
@@ -12,7 +12,7 @@ Przykład wspólny nadal dotyczy `Locker Service`, ale zasadnicze zadanie studen
 
 ---
 
-## 1. Zgodność z sylabusem
+## 1. Zgodność zakresu z sylabusem
 
 Laboratorium realizuje drugi punkt zajęć laboratoryjnych:
 
@@ -34,7 +34,7 @@ W LAB2 nie wdrażamy jeszcze Eureki, API Gateway, RabbitMQ ani pełnego środowi
 
 ---
 
-## 2. Cel dydaktyczny
+## 2. Cele dydaktyczne
 
 Po wykonaniu ćwiczenia student powinien rozumieć:
 
@@ -50,7 +50,7 @@ Po wykonaniu ćwiczenia student powinien rozumieć:
 - co powinno się stać, gdy cache jest niedostępny,
 - jak udowodnić testem, że dane przetrwały restart.
 
-### Zasada prowadzenia laboratorium
+### Organizacja pracy podczas laboratorium
 
 Nie chodzi o przepisanie konfiguracji SQLAlchemy ani Redis. Student powinien najpierw przewidzieć zmianę zachowania systemu, a dopiero potem ją zaimplementować.
 
@@ -63,7 +63,7 @@ Każdy większy etap ma cztery części:
 
 ---
 
-## 3. Efekty i dowody wykonania
+## 3. Efekty kształcenia i dowody ich realizacji
 
 | Efekt | Co student ćwiczy | Dowód wykonania |
 |---|---|---|
@@ -75,9 +75,9 @@ Każdy większy etap ma cztery części:
 
 ---
 
-## 4. Rekomendowany stos technologiczny
+## 4. Stos technologiczny
 
-### Wersja obowiązkowa
+### Zakres obowiązkowy
 
 - Python 3.12 lub nowszy,
 - FastAPI,
@@ -88,7 +88,7 @@ Każdy większy etap ma cztery części:
 - `pytest` i `httpx` do testów API,
 - klient Redis dla Pythona (`redis`).
 
-### Wersja docelowa i rozszerzenia
+### Wariant docelowy i zadania rozszerzające
 
 - PostgreSQL zamiast SQLite,
 - Alembic do zarządzania migracjami schematu,
@@ -100,7 +100,7 @@ SQLite jest wariantem startowym, ponieważ pozwala przeprowadzić pierwszą czę
 
 ---
 
-## 5. Punkt wyjścia: usługa z LAB1
+## 5. Weryfikacja stanu usługi z LAB1
 
 Student pracuje na własnej usłudze z LAB1. Przed rozpoczęciem powinien mieć:
 
@@ -113,7 +113,7 @@ Student pracuje na własnej usłudze z LAB1. Przed rozpoczęciem powinien mieć:
 
 Jeśli własna usługa nie działa, student może wykorzystać wspólny przykład `Locker Service`, ale powinien później przenieść rozwiązanie do własnego tematu.
 
-### Eksperyment przed zmianą
+### Weryfikacja trwałości danych przed zmianami
 
 Student wykonuje następujące czynności:
 
@@ -128,7 +128,7 @@ Należy zapisać wynik eksperymentu w README. To jest punkt odniesienia dla pó�
 
 ---
 
-## 6. Decyzje projektowe przed kodowaniem
+## 6. Decyzje projektowe przed implementacją
 
 Przed rozpoczęciem implementacji student odpowiada na pytania dotyczące własnej usługi:
 
@@ -156,9 +156,9 @@ Decyzje należy zapisać w krótkiej tabeli:
 
 ---
 
-## 7. Model danych i własność danych
+## 7. Projekt modelu i określenie własności danych
 
-### Przykład: `Locker Service`
+### Model danych usługi `Locker Service`
 
 Wspólny przykład może mieć następujący model:
 
@@ -181,7 +181,7 @@ status
 
 `Locker Service` jest właścicielem paczkomatów i skrytek. Nie powinien przechowywać w swoich tabelach historii przesyłek, danych użytkowników ani informacji o wysyłce powiadomień.
 
-### Zadanie dla własnego tematu
+### Projekt modelu dla własnej usługi
 
 Student tworzy prosty model dla własnej usługi:
 
@@ -195,9 +195,9 @@ Nie należy tworzyć tabeli „na wszystko”. Model ma pokazywać granicę odpo
 
 ---
 
-## 8. Projekt działania po zmianie
+## 8. Przepływ odczytu i zapisu po dodaniu cache
 
-### Odczyt bez cache
+### Odczyt danych bez użycia cache
 
 ```text
 Klient
@@ -212,7 +212,7 @@ SQLAlchemy
 Baza danych
 ```
 
-### Odczyt z cache-aside
+### Odczyt danych z użyciem cache-aside
 
 ```text
 Klient
@@ -231,7 +231,7 @@ FastAPI
 
 W wariancie cache-aside aplikacja sama decyduje, kiedy odczytać bazę i kiedy uzupełnić cache.
 
-### Zapis i unieważnienie cache
+### Zapis danych i unieważnienie cache
 
 Minimalny schemat zapisu:
 
@@ -247,9 +247,9 @@ Student powinien umieć wyjaśnić, dlaczego nie należy zapisywać nowej warto�
 
 ---
 
-## 9. Plan realizacji krok po kroku
+## 9. Sekwencja realizacji ćwiczenia
 
-### Krok 0 — przygotowanie i kopia wersji z LAB1
+### Krok 0 — przygotowanie projektu i wersji z LAB1
 
 Student:
 
@@ -260,7 +260,7 @@ Student:
 
 Punkt kontrolny: student potrafi pokazać, że dane z pamięci znikają po restarcie.
 
-### Krok 1 — konfiguracja połączenia z bazą
+### Krok 1 — konfiguracja połączenia z bazą danych
 
 Student:
 
@@ -271,7 +271,7 @@ Student:
 
 Nie należy umieszczać połączenia z bazą w każdym endpointcie osobno.
 
-### Krok 2 — model SQLAlchemy
+### Krok 2 — implementacja modelu tabeli w SQLAlchemy
 
 Student:
 
@@ -290,7 +290,7 @@ Należy odróżnić:
 
 W prostym ćwiczeniu te modele mogą być podobne, ale nie powinny być utożsamiane bez wyjaśnienia.
 
-### Krok 3 — inicjalizacja schematu i dane testowe
+### Krok 3 — inicjalizacja schematu i przygotowanie danych testowych
 
 Student:
 
@@ -301,7 +301,7 @@ Student:
 
 `create_all` jest akceptowalne jako rozwiązanie startowe do laboratorium. Alembic jest zadaniem rozszerzającym; w projekcie końcowym należy opisać sposób zmiany schematu.
 
-### Krok 4 — odczyt z bazy
+### Krok 4 — implementacja odczytu danych z bazy
 
 Student przepisuje istniejący odczyt tak, aby:
 
@@ -312,7 +312,7 @@ Student przepisuje istniejący odczyt tak, aby:
 
 Punkt kontrolny: po restarcie usługi rekord utworzony wcześniej nadal jest dostępny.
 
-### Krok 5 — zapis i modyfikacja w bazie
+### Krok 5 — implementacja zapisu i modyfikacji danych w bazie
 
 Student przenosi do bazy co najmniej jedną operację zapisu oraz jedną operację modyfikacji lub usunięcia.
 
@@ -348,7 +348,7 @@ Nazwy plików mogą być inne. Ważne jest, aby student potrafił wskazać, gdzi
 - dostęp do danych,
 - obsługa cache.
 
-### Krok 7 — pierwszy pomiar bez cache
+### Krok 7 — obserwacja odczytu danych bez cache
 
 Przed dodaniem Redis student wybiera jeden endpoint odczytu i opisuje jego ścieżkę:
 
@@ -358,7 +358,7 @@ Przed dodaniem Redis student wybiera jeden endpoint odczytu i opisuje jego ście
 
 Opcjonalnie student mierzy czas odczytu lub dodaje log informujący o wykonaniu zapytania do bazy. Nie chodzi o wyścig na milisekundy, tylko o obserwację, skąd pochodzi odpowiedź.
 
-### Krok 8 — cache-aside dla jednego odczytu
+### Krok 8 — zastosowanie cache-aside dla wybranego odczytu
 
 Student:
 
@@ -372,7 +372,7 @@ Student:
 
 Na tym etapie nie należy cache'ować wszystkich endpointów automatycznie. Student ma rozumieć, co i dlaczego jest cache'owane.
 
-### Krok 9 — unieważnianie cache
+### Krok 9 — unieważnianie cache po zmianie danych
 
 Student sprawdza scenariusz:
 
@@ -384,7 +384,7 @@ Student sprawdza scenariusz:
 
 Jeżeli student świadomie wybiera inną strategię, np. aktualizację wartości w cache, musi opisać jej konsekwencje.
 
-### Krok 10 — awaria cache
+### Krok 10 — weryfikacja zachowania podczas awarii cache
 
 Student zatrzymuje Redis albo konfiguruje nieprawidłowy adres i sprawdza:
 
@@ -397,7 +397,7 @@ Minimalna zasada odporności:
 
 > Niedostępny cache może pogorszyć wydajność, ale nie powinien niszczyć podstawowej funkcji usługi, jeśli baza danych działa.
 
-### Krok 11 — testy
+### Krok 11 — implementacja testów
 
 Student dodaje lub aktualizuje testy dla:
 
@@ -411,7 +411,7 @@ Student dodaje lub aktualizuje testy dla:
 
 Testy nie powinny zależeć od przypadkowej kolejności uruchomienia ani od danych pozostawionych przez poprzedni test.
 
-### Krok 12 — dokumentacja i własny temat
+### Krok 12 — dokumentacja zmian we własnym projekcie
 
 Student aktualizuje README o:
 
@@ -429,7 +429,7 @@ Student aktualizuje README o:
 
 ---
 
-## 10. Zadania celowo niekompletne
+## 10. Decyzje projektowe pozostawione studentom
 
 Instrukcja LAB2 nie powinna podawać całego rozwiązania. Student sam musi zdecydować:
 
@@ -448,9 +448,9 @@ Przykładowe zadanie:
 
 ---
 
-## 11. Punkty kontrolne podczas zajęć
+## 11. Punkty kontrolne realizacji ćwiczenia
 
-### Checkpoint A — stan przed zmianą
+### Checkpoint A — weryfikacja stanu przed zmianami
 
 Student pokazuje:
 
@@ -458,7 +458,7 @@ Student pokazuje:
 - eksperyment utraty danych po restarcie,
 - wybrany rekord i właściciela danych.
 
-### Checkpoint B — baza danych
+### Checkpoint B — weryfikacja integracji z bazą danych
 
 Student pokazuje:
 
@@ -467,7 +467,7 @@ Student pokazuje:
 - rekord zapisany w bazie,
 - odczyt tego rekordu po restarcie procesu.
 
-### Checkpoint C — reguły i błędy
+### Checkpoint C — weryfikacja reguł biznesowych i błędów
 
 Student pokazuje:
 
@@ -476,7 +476,7 @@ Student pokazuje:
 - kontrolowany błąd braku rekordu,
 - brak duplikatów po ponownym uruchomieniu.
 
-### Checkpoint D — cache
+### Checkpoint D — weryfikacja cache
 
 Student pokazuje:
 
@@ -484,7 +484,7 @@ Student pokazuje:
 - kolejny odczyt jako hit,
 - zmianę rekordu i brak starej wartości po unieważnieniu.
 
-### Checkpoint E — rozmowa techniczna
+### Checkpoint E — wyjaśnienie decyzji technicznych
 
 Student odpowiada własnymi słowami:
 
@@ -498,7 +498,7 @@ Student odpowiada własnymi słowami:
 
 ---
 
-## 12. Porównanie rozwiązań
+## 12. Porównanie pamięci procesu, bazy danych i cache
 
 | Cecha | Pamięć procesu | Baza danych | Cache |
 |---|---|---|---|
@@ -513,7 +513,7 @@ Student powinien umieć wyjaśnić, dlaczego dodanie Redis nie oznacza usunięci
 
 ---
 
-## 13. Zakres odłożony do kolejnych laboratoriów
+## 13. Zakres poza LAB2
 
 W LAB2 nie realizujemy jeszcze:
 
@@ -546,7 +546,7 @@ Po wykonaniu minimum student może:
 
 ---
 
-## 15. Kryteria gotowości planu do implementacji
+## 15. Warunki rozpoczęcia implementacji instrukcji LAB2
 
 Przed rozpoczęciem pisania pełnej instrukcji `lab2.md` należy zaakceptować:
 
@@ -561,7 +561,7 @@ Przed rozpoczęciem pisania pełnej instrukcji `lab2.md` należy zaakceptować:
 
 ---
 
-## 16. Kryteria zaliczenia LAB2
+## 16. Kryteria zaliczenia etapu LAB2
 
 | Element | Wymaganie |
 |---|---|
@@ -579,7 +579,7 @@ Przed rozpoczęciem pisania pełnej instrukcji `lab2.md` należy zaakceptować:
 
 ---
 
-## 17. Powiązanie z kolejnymi laboratoriami
+## 17. Miejsce LAB2 w projekcie semestralnym
 
 ```text
 LAB1 — podstawowa usługa i API
