@@ -90,7 +90,7 @@ sequenceDiagram
                 R-->>U: wpis usunięty
             else Redis niedostępny
                 R--xU: błąd lub timeout
-                Note over U,R: Zapis w bazie pozostaje zatwierdzony; stary wpis może być dostępny do wygaśnięcia TTL
+                Note over U,R: Zapis w bazie pozostaje zatwierdzony, a stary wpis może być dostępny do wygaśnięcia TTL
             end
             U-->>K: odpowiedź o zapisanej zmianie
         end
@@ -98,7 +98,7 @@ sequenceDiagram
 </pre>
 
 <script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@12/dist/mermaid.esm.min.mjs";
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@12.2.0/dist/mermaid.esm.min.mjs";
 
   mermaid.initialize({
     startOnLoad: false,
