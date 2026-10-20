@@ -169,7 +169,7 @@ Pobierz [kod pomocniczy LAB2 — ZIP](lab2-support.zip) i rozpakuj **obok własn
 
 Paczka pokazuje mechanizm na danych paczkomatu. Nie jest pełnym zamiennikiem `Locker Service` z LAB1: nie udostępnia HTTP ani operacji skrytek. Własne API i reguły rozwijasz w swoim repozytorium.
 
-### Konfiguracja Redis w wybranym środowisku
+### Uruchamianie i weryfikacja serwera cache (Redis)
 
 W dalszej części instrukcji wykonasz operacje sprawdzenia połączenia (`PING`), usunięcia klucza (`DEL`), sprawdzenia czasu życia (`TTL`) oraz symulacji awarii (zatrzymania i wznowienia serwera). Użyj poleceń właściwych dla wybranego środowiska:
 
@@ -325,7 +325,7 @@ Przed odłączeniem potwierdź udane unieważnienie oraz MISS; jeśli widzisz BY
 
 **Ograniczenie:** po przywróceniu łączności stary wpis może istnieć aż do wygaśnięcia TTL. W paczce jest test tego przypadku. Commit w bazie i usunięcie klucza Redis nie są jedną transakcją. Prosty cache-aside nie zapewnia też ścisłej spójności przy równoległych zapisach i odczytach.
 
-### Analiza skutków awarii Redis
+### Analiza skutków niedostępności cache (Redis)
 
 1. Dlaczego dane przetrwały uruchomienie nowego procesu?
 2. Co pokazuje HIT, a czego nie dowodzi o wydajności?
@@ -563,7 +563,7 @@ def readiness(request: Request):
     )
 ```
 
-### Wykorzystanie dokumentacji — wymaganie EK_03
+### Implementacja rozwiązania na podstawie dokumentacji (EK_03)
 
 Wykorzystaj minimum dwa fragmenty oficjalnej dokumentacji:
 
@@ -573,7 +573,7 @@ Wykorzystaj minimum dwa fragmenty oficjalnej dokumentacji:
 
 W README zapisz problem, odnośnik, zastosowanie i sposób sprawdzenia. Sam wykaz linków nie wystarcza.
 
-> **Wskazówka:** Szczegółowy przewodnik dotyczący pracy z agentami AI, plików `SKILL.md` oraz przykładowych promptów dla SQLAlchemy znajdziesz w [Załączniku na końcu instrukcji](#załącznik-praca-z-agentami-ai-i-dokumentacja-sqlalchemy).
+> **Wskazówka:** Szczegółowy przewodnik dotyczący pracy z agentami AI, plików `SKILL.md` oraz przykładowych promptów znajdziesz w [rozdziale o dokumentacji i asystentach AI](#10-korzystanie-z-dokumentacji-i-asystentów-ai-sqlalchemy).
 
 ### Krok 7 — implementacja i uruchomienie testów
 
@@ -662,23 +662,23 @@ Osobny właściciel danych nie wymaga osobnego fizycznego serwera. Istotne są k
 
 ## 7. Weryfikacja efektów i rozmowa techniczna
 
-### Checkpoint A — zachowanie ciągłości projektu
+### Punkt kontrolny A — zachowanie ciągłości projektu
 
 Pokaż temat, API, regułę i plan drugiej usługi z LAB1. Uzasadnij zmiany.
 
-### Checkpoint B — weryfikacja trwałości i reguły biznesowej
+### Punkt kontrolny B — weryfikacja trwałości i reguły biznesowej
 
 Pokaż zapis po restarcie i odrzuconą operację bez zmiany danych. Wskaż commit i rollback.
 
-### Checkpoint C — weryfikacja działania cache
+### Punkt kontrolny C — weryfikacja działania cache
 
 Pokaż MISS, HIT, TTL i aktualną odpowiedź po poprawnym unieważnieniu. Wyjaśnij skutki nieudanego unieważnienia.
 
-### Checkpoint D — weryfikacja testów i obsługi awarii
+### Punkt kontrolny D — weryfikacja testów i obsługi awarii
 
 Uruchom testy, wyjaśnij izolację i pokaż działanie API bez Redis.
 
-### Checkpoint E — samodzielna modyfikacja kodu
+### Punkt kontrolny E — samodzielna modyfikacja kodu
 
 Każda osoba wykonuje drobną zmianę, np. zmienia TTL i odpowiadającą mu asercję albo dodaje test brakującego zasobu. Wyjaśnia użycie dokumentacji i weryfikację kodu z AI.
 
@@ -738,7 +738,7 @@ Dla chętnych: PostgreSQL, migracja Alembic, pomiar liczby zapytań i czasu, cac
 
 ---
 
-## 10. Korzystanie z asystentów AI i dokumentacji SQLAlchemy
+## 10. Korzystanie z dokumentacji i asystentów AI (SQLAlchemy)
 
 **Status weryfikacji: 19.10.2026.** W sprawdzonej [oficjalnej dokumentacji SQLAlchemy](https://docs.sqlalchemy.org/en/20/) i [repozytorium projektu](https://github.com/sqlalchemy/sqlalchemy) nie potwierdzono oficjalnego, gotowego do zainstalowania pliku `SKILL.md` do pracy z SQLAlchemy w aplikacji studenta. Nie znaleziono również głównego `AGENTS.md` w repozytorium. Nie traktuj skilli znalezionych w innych repozytoriach jako materiałów autorów SQLAlchemy.
 
@@ -773,7 +773,7 @@ To przekazuje agentowi kontekst i konkretne kryteria pracy. Nie instaluje biblio
 
 Nie trzeba dodawać nowego pliku do projektu. Jeśli używany agent obsługuje projektowy `AGENTS.md`, możesz w głównym katalogu własnej usługi, obok README, zapisać własne zasady LAB2 i odnośniki do dokumentacji. Jeśli plik już istnieje, uzupełnij go zamiast nadpisywać. Oznacz te zasady jako instrukcje projektu studenckiego, nie oficjalny materiał SQLAlchemy. Sposób automatycznego odczytu sprawdź w dokumentacji swojego narzędzia.
 
-### Ocena nieoficjalnych materiałów wspierających pracę z SQLAlchemy
+### Ocena nieoficjalnych materiałów do pracy z bazą danych (SQLAlchemy)
 
 Poniższe materiały są tworzone przez społeczność, **nie przez zespół SQLAlchemy**. To propozycje do samodzielnej oceny, a nie wymagane zależności LAB2. Sprawdzono ich treść 19.10.2026; linki do gałęzi `main` mogą później prowadzić do zmienionych wersji.
 
@@ -784,7 +784,7 @@ Poniższe materiały są tworzone przez społeczność, **nie przez zespół SQL
 
 **Uwaga:** skill zawiera instrukcje dla agenta i może wpływać na edycję plików oraz wykonywanie poleceń. Może też zawierać błędy, uproszczenia albo zalecenia niezgodne z wersją bibliotek w Twoim projekcie. Nie jest gwarancją poprawnego kodu ani audytowanym dodatkiem. Przed użyciem przeczytaj `SKILL.md`, powiązane instrukcje i ewentualne skrypty. Nie uruchamiaj bez sprawdzenia instalatorów, nie przekazuj sekretów i nie akceptuj kasowania bazy jako sposobu naprawy migracji. W razie sprzeczności sprawdź oficjalną dokumentację i zachowaj wymagania LAB2.
 
-### Instalacja i uruchomienie wybranego materiału wspierającego
+### Pobranie i konfiguracja wybranej instrukcji agenta AI
 
 Wybierz jeden materiał; nie musisz instalować obu.
 

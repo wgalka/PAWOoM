@@ -12,7 +12,7 @@ Przykład wspólny nadal dotyczy `Locker Service`, ale zasadnicze zadanie studen
 
 ---
 
-## 1. Zgodność zakresu z sylabusem
+## 1. Weryfikacja zgodności zakresu z sylabusem
 
 Laboratorium realizuje drugi punkt zajęć laboratoryjnych:
 
@@ -75,7 +75,7 @@ Każdy większy etap ma cztery części:
 
 ---
 
-## 4. Stos technologiczny
+## 4. Dobór stosu technologicznego
 
 ### Zakres obowiązkowy
 
@@ -271,7 +271,7 @@ Student:
 
 Nie należy umieszczać połączenia z bazą w każdym endpointcie osobno.
 
-### Krok 2 — implementacja modelu tabeli w SQLAlchemy
+### Krok 2 — implementacja modelu tabeli (SQLAlchemy)
 
 Student:
 
@@ -450,7 +450,7 @@ Przykładowe zadanie:
 
 ## 11. Punkty kontrolne realizacji ćwiczenia
 
-### Checkpoint A — weryfikacja stanu przed zmianami
+### Punkt kontrolny A — weryfikacja stanu przed zmianami
 
 Student pokazuje:
 
@@ -458,7 +458,7 @@ Student pokazuje:
 - eksperyment utraty danych po restarcie,
 - wybrany rekord i właściciela danych.
 
-### Checkpoint B — weryfikacja integracji z bazą danych
+### Punkt kontrolny B — weryfikacja integracji z bazą danych
 
 Student pokazuje:
 
@@ -467,7 +467,7 @@ Student pokazuje:
 - rekord zapisany w bazie,
 - odczyt tego rekordu po restarcie procesu.
 
-### Checkpoint C — weryfikacja reguł biznesowych i błędów
+### Punkt kontrolny C — weryfikacja reguł biznesowych i błędów
 
 Student pokazuje:
 
@@ -476,7 +476,7 @@ Student pokazuje:
 - kontrolowany błąd braku rekordu,
 - brak duplikatów po ponownym uruchomieniu.
 
-### Checkpoint D — weryfikacja cache
+### Punkt kontrolny D — weryfikacja cache
 
 Student pokazuje:
 
@@ -484,7 +484,7 @@ Student pokazuje:
 - kolejny odczyt jako hit,
 - zmianę rekordu i brak starej wartości po unieważnieniu.
 
-### Checkpoint E — wyjaśnienie decyzji technicznych
+### Punkt kontrolny E — wyjaśnienie decyzji technicznych
 
 Student odpowiada własnymi słowami:
 
