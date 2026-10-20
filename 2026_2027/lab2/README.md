@@ -45,6 +45,8 @@ Po laboratorium powinieneś:
 
 **TTL** (*Time To Live*) to czas życia wpisu. **HIT** oznacza znalezienie go, **MISS** — brak. W naszym przykładzie **BYPASS** oznacza pominięcie niedostępnego cache.
 
+**Cache-aside** to wzorzec, w którym aplikacja najpierw sprawdza cache. Przy **HIT** zwraca znalezioną kopię. Przy **MISS** pobiera dane z bazy, zapisuje je w cache z określonym TTL i zwraca wynik. Po zatwierdzeniu zmiany w bazie usuwa odpowiadający wpis z cache, aby kolejny odczyt pobrał aktualne dane. Baza pozostaje źródłem prawdy.
+
 **Przepływ cache-aside — odczyt i zmiana danych:**
 
 <pre class="mermaid">
@@ -90,7 +92,7 @@ sequenceDiagram
                 R-->>U: wpis usunięty
             else Redis niedostępny
                 R--xU: błąd lub timeout
-                Note over U,R: Zapis w bazie pozostaje zatwierdzony, a stary wpis może być dostępny do wygaśnięcia TTL
+                Note over U,R: Stary cache może zwracać dane do końca TTL
             end
             U-->>K: odpowiedź o zapisanej zmianie
         end

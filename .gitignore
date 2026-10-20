@@ -8,4 +8,5 @@ __pycache__/
 *.db
 .pytest_cache/
 .agents
+/AGENTS.md
 
