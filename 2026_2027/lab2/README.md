@@ -109,8 +109,6 @@ sequenceDiagram
   await mermaid.run({ querySelector: "pre.mermaid" });
 </script>
 
-Do wyrenderowania diagramu przeglądarka musi pobrać bibliotekę Mermaid z jsDelivr i wykonywać JavaScript. Przy zablokowanym skrypcie pozostaje czytelna definicja diagramu.
-
 Baza jest źródłem prawdy, ale przy HIT aplikacja jej nie sprawdza. Błędne unieważnianie może więc dać nieaktualną odpowiedź. Cache nadaje się np. do opisu sali; o przyznaniu ostatniego miejsca nie decyduj wyłącznie na podstawie kopii.
 
 ### Analiza odpowiedzialności za dane
