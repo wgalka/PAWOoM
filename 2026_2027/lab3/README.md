@@ -60,43 +60,26 @@ Punkt kontrolny na koniec zajęć: obie usługi są widoczne w panelu Eureka jak
 
 <pre class="mermaid">
 sequenceDiagram
-    autonumber
-    actor K as Klient
-    participant B as Usługa B
-    participant E as Eureka
-    participant A as Usługa A
+    participant Client as Klient
+    participant ServiceB as Usługa B
+    participant Registry as Eureka
+    participant ServiceA as Usługa A
 
-    A->>E: Rejestracja nazwy, adresu i portu
-    E-->>A: Potwierdzenie rejestracji
-    loop Okresowo
-        A->>E: Heartbeat
-        E-->>A: Potwierdzenie
-    end
+    ServiceA->>Registry: Rejestracja usługi
+    Registry-->>ServiceA: Potwierdzenie rejestracji
+    ServiceA->>Registry: Okresowy heartbeat
 
-    K->>B: Żądanie endpointu
-    B->>E: Odszukaj usługę A po nazwie
-    E-->>B: Adres i port instancji A
-    B->>A: Bezpośrednie żądanie HTTP
+    Client->>ServiceB: Żądanie endpointu
+    ServiceB->>Registry: Wyszukanie usługi A
+    Registry-->>ServiceB: Adres instancji A
+    ServiceB->>ServiceA: Żądanie HTTP
     alt Usługa A odpowiada
-        A-->>B: Odpowiedź HTTP
-        B-->>K: Odpowiedź z danymi
-    else Brak odpowiedzi lub błąd połączenia
-        Note over B,A: Instancja może być niedostępna albo wpis w rejestrze nieaktualny
-        B-->>K: Kontrolowana odpowiedź HTTP 503
+        ServiceA-->>ServiceB: Odpowiedź HTTP
+        ServiceB-->>Client: Odpowiedź z danymi
+    else Brak połączenia z usługą A
+        ServiceB-->>Client: Kontrolowana odpowiedź HTTP 503
     end
 </pre>
-
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@12.2.0/dist/mermaid.esm.min.mjs";
-
-  mermaid.initialize({
-    startOnLoad: false,
-    theme: "neutral",
-    securityLevel: "strict"
-  });
-
-  await mermaid.run({ querySelector: "pre.mermaid" });
-</script>
 
 Rejestr nie przechowuje danych domenowych i nie pośredniczy w każdym żądaniu. Klient pobiera z niego adres instancji, a następnie łączy się z usługą bezpośrednio. Rejestracja i heartbeat nie gwarantują, że instancja odpowie na każde żądanie; adres może być chwilowo nieaktualny, a zależna usługa może zwrócić błąd.
 
