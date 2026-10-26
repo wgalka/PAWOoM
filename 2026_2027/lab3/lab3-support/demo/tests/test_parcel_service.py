@@ -1,4 +1,4 @@
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -63,3 +63,19 @@ async def test_delivery_check_returns_service_unavailable_when_dependency_is_dow
 
     assert response.status_code == 503
     assert response.json()["detail"] == "Locker Service is unavailable"
+
+
+@pytest.mark.anyio
+async def test_delivery_check_preserves_not_found_from_dependency():
+    error = HTTPError("http://locker/lockers/UNKNOWN", 404, "Not Found", {}, None)
+    fake = FakeEurekaClient(error=error)
+    app = create_app(eureka_client=fake)
+
+    async with app.router.lifespan_context(app):
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get("/delivery-check/UNKNOWN")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Destination locker not found"

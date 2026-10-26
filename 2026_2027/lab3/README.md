@@ -46,19 +46,57 @@ Drugą usługę należy wybrać zgodnie z planem zapisanym w LAB1. Powinna obsł
 
 W przypadku pracy w parze należy zmieniać role osoby piszącej i sprawdzającej. W dokumentacji należy wskazać wkład każdej osoby. Projekt semestralny nadal wymaga od każdej osoby implementacji co najmniej dwóch różnych mikrousług.
 
+### Praca na zajęciach i po zajęciach
+
+Proponowany podział 120 minut: 10 minut pojęć, 15 minut przykładu, 15 minut decyzji projektowych, 40 minut implementacji, 25 minut weryfikacji, 10 minut odbioru i 5 minut rezerwy.
+
+Punkt kontrolny na koniec zajęć: obie usługi są widoczne w panelu Eureka jako `UP`, a pierwsze żądanie między nimi działa przez nazwę logiczną. Po zajęciach można dokończyć test awarii zależności, testy jednostkowe i dokumentację. Nadal należą one do wymagań oddawanego etapu.
+
 ## 3. Pojęcia potrzebne do wykonania zadania
 
 ### Rejestr, usługa i instancja
 
 **Rejestr usług** przechowuje informacje o uruchomionych instancjach: nazwę usługi, adres, port i stan. **Usługa** jest logicznym komponentem, np. `LOCKER-SERVICE`. **Instancja** jest konkretnym uruchomionym procesem tej usługi, np. procesem dostępnym pod `127.0.0.1:8101`.
 
-```text
-PARCEL-SERVICE ── rejestracja ──> Eureka Server
-LOCKER-SERVICE ── rejestracja ──> Eureka Server
+<pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor K as Klient
+    participant B as Usługa B
+    participant E as Eureka
+    participant A as Usługa A
 
-PARCEL-SERVICE ── „znajdź LOCKER-SERVICE” ──> Eureka Server
-PARCEL-SERVICE ── HTTP do adresu z odpowiedzi ──> LOCKER-SERVICE
-```
+    A->>E: Rejestracja nazwy, adresu i portu
+    E-->>A: Potwierdzenie rejestracji
+    loop Okresowo
+        A->>E: Heartbeat
+        E-->>A: Potwierdzenie
+    end
+
+    K->>B: Żądanie endpointu
+    B->>E: Odszukaj usługę A po nazwie
+    E-->>B: Adres i port instancji A
+    B->>A: Bezpośrednie żądanie HTTP
+    alt Usługa A odpowiada
+        A-->>B: Odpowiedź HTTP
+        B-->>K: Odpowiedź z danymi
+    else Brak odpowiedzi lub błąd połączenia
+        Note over B,A: Instancja może być niedostępna albo wpis w rejestrze nieaktualny
+        B-->>K: Kontrolowana odpowiedź HTTP 503
+    end
+</pre>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@12.2.0/dist/mermaid.esm.min.mjs";
+
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: "neutral",
+    securityLevel: "strict"
+  });
+
+  await mermaid.run({ querySelector: "pre.mermaid" });
+</script>
 
 Rejestr nie przechowuje danych domenowych i nie pośredniczy w każdym żądaniu. Klient pobiera z niego adres instancji, a następnie łączy się z usługą bezpośrednio. Rejestracja i heartbeat nie gwarantują, że instancja odpowie na każde żądanie; adres może być chwilowo nieaktualny, a zależna usługa może zwrócić błąd.
 
@@ -72,17 +110,36 @@ W przykładzie wykorzystano `py-eureka-client`, czyli zewnętrzną bibliotekę P
 
 ### Pobranie materiałów i uruchomienie Eureka Server
 
-Pobierz [pakiet pomocniczy LAB3](lab3-support.zip) albo pracuj z katalogu [lab3-support](lab3-support/). Pakiet zawiera lokalny projekt Eureka Server, minimalną parę usług FastAPI oraz test przykładowego wywołania.
+Pakiet pomocniczy LAB3 można pobrać jako [archiwum ZIP](lab3-support.zip) albo korzystać z katalogu [lab3-support](lab3-support/). Pakiet zawiera lokalny projekt Eureka Server, minimalną parę usług FastAPI oraz test przykładowego wywołania.
 
-Do uruchomienia przygotowanego serwera potrzebny jest Docker Desktop z obsługą polecenia `docker compose`. Kontener uruchamia wyłącznie rejestr; własne usługi należy uruchomić lokalnie jako osobne procesy.
+Zalecanym sposobem uruchomienia przygotowanego serwera jest Docker Desktop z obsługą polecenia `docker compose`. Kontener uruchamia wyłącznie rejestr; własne usługi należy uruchomić lokalnie jako osobne procesy.
 
-W terminalu PowerShell przejdź do katalogu `lab3-support` i uruchom serwer:
+Wymagany jest Python 3.12 lub nowszy. Przed zajęciami należy wybrać sposób uruchomienia Eureki i sprawdzić wymagane narzędzia. W przypadku Dockera należy wykonać:
+
+```powershell
+python --version
+docker version
+docker compose version
+```
+
+Polecenie `docker version` powinno wyświetlić sekcję `Server`. Jeśli widoczna jest tylko sekcja klienta albo pojawia się błąd połączenia z silnikiem, należy uruchomić Docker Desktop i ponowić sprawdzenie. Gdy Docker nie może zostać uruchomiony, wariant Maven wymaga JDK 21 i Mavena; ich dostępność należy sprawdzić poleceniami `java -version` i `mvn -version`. Pakiet ZIP nie zawiera środowiska wirtualnego; należy je utworzyć w następnym kroku.
+
+Jeżeli sprzęt nie pozwala uruchomić Dockera, a na komputerze są dostępne JDK 21 i Maven, rejestr można uruchomić bez kontenera. W katalogu `lab3-support` należy wykonać:
+
+```powershell
+Set-Location .\eureka-server
+mvn spring-boot:run
+```
+
+Przy pierwszym uruchomieniu Maven pobierze zależności. Serwer będzie dostępny pod adresem `http://localhost:8761/`; proces można zatrzymać skrótem `Ctrl+C`. Należy wybrać tę metodę albo Docker Compose.
+
+W terminalu PowerShell należy przejść do katalogu `lab3-support` i uruchomić serwer:
 
 ```powershell
 docker compose up --build -d eureka
 ```
 
-Budowanie obrazu pobiera zależności Maven i może potrwać przy pierwszym uruchomieniu. Otwórz panel [Eureka](http://localhost:8761/). Serwer należy uruchomić przed usługami i pozostawić aktywnym podczas testu.
+Budowanie obrazu pobiera zależności Maven i może potrwać przy pierwszym uruchomieniu. Panel [Eureka](http://localhost:8761/) należy otworzyć w przeglądarce. Serwer powinien zostać uruchomiony przed usługami i pozostać aktywny podczas testu.
 
 Przydatne polecenia:
 
@@ -92,7 +149,7 @@ docker compose stop eureka
 docker compose start eureka
 ```
 
-Po ćwiczeniu serwer można zatrzymać poleceniem `docker compose down` wykonanym w katalogu `lab3-support`.
+Po ćwiczeniu serwer należy zatrzymać wybraną metodą: dla Docker Compose należy wykonać `docker compose down` w katalogu `lab3-support`, a dla Maven użyć skrótu `Ctrl+C` w terminalu z uruchomioną Eureką.
 
 ### Instalacja zależności przykładu
 
@@ -109,7 +166,7 @@ Pakiet pomocniczy przypina `py-eureka-client` do wersji `0.13.3`, aby przykład 
 
 Przykład pokazuje rejestrację `LOCKER-SERVICE` i `PARCEL-SERVICE`. `PARCEL-SERVICE` wywołuje endpoint paczkomatu, odnajdując `LOCKER-SERVICE` przez Eurekę.
 
-W pierwszym terminalu, w katalogu `lab3-support`, uruchom:
+W pierwszym terminalu, w katalogu `lab3-support`, należy uruchomić:
 
 ```powershell
 $env:EUREKA_SERVER_URL = 'http://127.0.0.1:8761'
@@ -117,7 +174,7 @@ $env:SERVICE_PORT = '8101'
 .\.venv\Scripts\python.exe -m uvicorn demo.locker_service.app.main:app --port 8101
 ```
 
-W drugim terminalu, również w katalogu `lab3-support`, uruchom:
+W drugim terminalu, również w katalogu `lab3-support`, należy uruchomić:
 
 ```powershell
 $env:EUREKA_SERVER_URL = 'http://127.0.0.1:8761'
@@ -125,7 +182,7 @@ $env:SERVICE_PORT = '8102'
 .\.venv\Scripts\python.exe -m uvicorn demo.parcel_service.app.main:app --port 8102
 ```
 
-Należy poczekać, aż panel Eureka pokaże obie usługi jako `UP`. Następnie w trzecim terminalu sprawdź odpowiedź bezpośrednią i wywołanie przez drugą usługę:
+Należy poczekać, aż panel Eureka pokaże obie usługi jako `UP`. Następnie w trzecim terminalu należy sprawdzić odpowiedź bezpośrednią i wywołanie przez drugą usługę:
 
 ```powershell
 Invoke-RestMethod http://127.0.0.1:8101/lockers/KRK-1024
@@ -196,28 +253,36 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from py_eureka_client.eureka_client import EurekaClient
 
-client = EurekaClient(
-    eureka_server=os.getenv("EUREKA_SERVER_URL", "http://127.0.0.1:8761"),
-    eureka_context="/eureka",
-    app_name="LOCKER-SERVICE",
-    instance_ip=os.getenv("INSTANCE_IP", "127.0.0.1"),
-    instance_host=os.getenv("INSTANCE_HOST", "localhost"),
-    instance_port=int(os.getenv("SERVICE_PORT", "8101")),
-)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await client.start()
-    app.state.eureka_client = client
-    try:
-        yield
-    finally:
-        await client.stop()
+def create_app(eureka_client: EurekaClient | None = None) -> FastAPI:
+    client = eureka_client or EurekaClient(
+        eureka_server=os.getenv("EUREKA_SERVER_URL", "http://127.0.0.1:8761"),
+        eureka_context="/eureka",
+        app_name=os.getenv("SERVICE_NAME", "LOCKER-SERVICE"),
+        instance_ip=os.getenv("INSTANCE_IP", "127.0.0.1"),
+        instance_host=os.getenv("INSTANCE_HOST", "localhost"),
+        instance_port=int(os.getenv("SERVICE_PORT", "8101")),
+        strict_service_error_policy=False,
+    )
 
-app = FastAPI(lifespan=lifespan)
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        app.state.eureka_client = client
+        await client.start()
+        try:
+            yield
+        finally:
+            await client.stop()
+
+    return FastAPI(lifespan=lifespan)
+
+
+app = create_app()
 ```
 
-Nazwę, URL rejestru, IP i port należy pobierać z konfiguracji środowiska zamiast utrwalać w kodzie produkcyjnym. Dla przygotowanego serwera Spring Cloud należy podać adres bazowy, np. `http://127.0.0.1:8761`, a ścieżkę API ustawić jako `eureka_context="/eureka"`. Fragment pokazuje jedynie kolejność: utworzenie klienta, start przy uruchamianiu aplikacji i stop przy jej zamykaniu.
+Nazwę, URL rejestru, IP i port należy pobierać z konfiguracji środowiska zamiast utrwalać w kodzie produkcyjnym. Dla przygotowanego serwera Spring Cloud należy podać adres bazowy, np. `http://127.0.0.1:8761`, a ścieżkę API ustawić jako `eureka_context="/eureka"`. W każdej usłudze klient należy utworzyć wewnątrz `create_app()`, aby zachować wzorzec projektu z LAB1 i ułatwić izolowanie aplikacji w testach. Fragment pokazuje kolejność: utworzenie klienta, start przy uruchamianiu aplikacji i stop przy jej zamykaniu.
+
+Parametr `strict_service_error_policy=False` jest potrzebny do zachowania mapowania błędów z Kroku 5. Przy wartości domyślnej `True` klient może potraktować odpowiedź HTTP jako błąd instancji, spróbować kolejnego węzła i po niepowodzeniu zgłosić `WalkNodeException`, która jest podklasą `URLError`. Wtedy odpowiedź `404` z usługi docelowej mogłaby zostać zamieniona na `503`. Ustawienie `False` pozwala przekazać `HTTPError` do kodu endpointu, gdzie można odwzorować `404` i pozostałe błędy HTTP.
 
 Każda usługa powinna zarejestrować własną nazwę i port. Należy potwierdzić w panelu Eureki, że obie instancje mają stan `UP`.
 
@@ -235,7 +300,33 @@ result = await app.state.eureka_client.do_service(
 
 Należy zastąpić nazwę i ścieżkę własnym kontraktem. Nie należy wpisywać adresu `http://127.0.0.1:8101` w kodzie endpointu. Adres Eureki pozostaje parametrem konfiguracyjnym, a adres wywoływanej usługi pochodzi z rejestru.
 
-Jeżeli zależna usługa zwraca błąd lub nie jest dostępna, API wywołującej usługi powinno zwrócić kontrolowany kod HTTP, np. `502` albo `503`, bez ujawniania tracebacku i sekretów. Nie należy dodawać na tym etapie pełnego circuit breakera ani mechanizmu ponawiania żądań.
+Biblioteka `py-eureka-client` może zgłosić `urllib.error.HTTPError`, gdy usługa zwróci błąd HTTP, albo `urllib.error.URLError`, gdy nie można jej odnaleźć lub nawiązać połączenia. Należy przełożyć te wyjątki na kontrolowaną odpowiedź FastAPI. Przykład mapuje `404` usługi docelowej na `404`, pozostałe błędy HTTP na `502`, a błąd odnalezienia lub połączenia na `503`:
+
+```python
+from urllib.error import HTTPError, URLError
+from fastapi import HTTPException
+
+try:
+    result = await app.state.eureka_client.do_service(
+        "LOCKER-SERVICE",
+        "/lockers/KRK-1024",
+        return_type="json",
+    )
+except HTTPError as exc:
+    if exc.code == 404:
+        raise HTTPException(
+            status_code=404, detail="Nie znaleziono zasobu"
+        ) from exc
+    raise HTTPException(
+        status_code=502, detail="Zależna usługa zwróciła błąd HTTP"
+    ) from exc
+except URLError as exc:
+    raise HTTPException(
+        status_code=503, detail="Zależna usługa jest niedostępna"
+    ) from exc
+```
+
+Odpowiedź nie powinna ujawniać tracebacku ani sekretów. Nie należy dodawać na tym etapie pełnego circuit breakera ani mechanizmu ponawiania żądań.
 
 ### Krok 6 — sprawdzenie odporności na błąd zależności
 
@@ -250,7 +341,60 @@ Po teście należy ponownie uruchomić usługę i potwierdzić, że przepływ dz
 
 ### Krok 7 — testy automatyczne
 
-Testy jednostkowe nie powinny wymagać działającego Eureka Server. Należy wstrzyknąć zamiennik klienta, który udostępnia asynchroniczne metody `start()`, `stop()` i `do_service()`. Test powinien sprawdzać:
+Testy jednostkowe nie powinny wymagać działającego Eureka Server. Należy wstrzyknąć zamiennik klienta, który udostępnia asynchroniczne metody `start()`, `stop()` i `do_service()`. Poniższy przykład sprawdza wywołanie usługi po nazwie i nie wymaga uruchomionej Eureki. Ścieżkę importu i endpoint należy dostosować do własnego projektu:
+
+```python
+import pytest
+from httpx import ASGITransport, AsyncClient
+
+from app.main import create_app
+
+
+class FakeEurekaClient:
+    def __init__(self, response=None, error=None):
+        self.response = response or {"code": "KRK-1024", "status": "active"}
+        self.error = error
+        self.calls = []
+
+    async def start(self):
+        pass
+
+    async def stop(self):
+        pass
+
+    async def do_service(self, service_name, path, return_type=None):
+        self.calls.append((service_name, path, return_type))
+        if self.error:
+            raise self.error
+        return self.response
+
+
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"
+
+
+@pytest.mark.anyio
+async def test_endpoint_uses_service_discovery():
+    fake = FakeEurekaClient()
+    app = create_app(eureka_client=fake)
+
+    async with app.router.lifespan_context(app):
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get("/delivery-check/KRK-1024")
+
+    assert response.status_code == 200
+    assert response.json()["locker"]["code"] == "KRK-1024"
+    assert fake.calls == [
+        ("LOCKER-SERVICE", "/lockers/KRK-1024", "json")
+    ]
+```
+
+Drugi test powinien wstrzyknąć atrapę zgłaszającą `URLError` i sprawdzić kontrolowaną odpowiedź `503`. Testy powinny również sprawdzać odpowiedź dla błędu HTTP zwróconego przez zależną usługę.
+
+Testy powinny weryfikować:
 
 - kod i treść odpowiedzi endpointu wywołującego,
 - nazwę logiczną oraz ścieżkę przekazane do klienta,
@@ -258,7 +402,7 @@ Testy jednostkowe nie powinny wymagać działającego Eureka Server. Należy wst
 
 Test rzeczywistej rejestracji i odnajdywania należy wykonać ręcznie z uruchomioną Eureką. Nie należy wykonywać połączeń sieciowych w podstawowym zestawie testów `pytest`.
 
-Przykład testu z zamiennikiem znajduje się w `lab3-support/demo/tests/test_parcel_service.py`.
+Pełniejszy przykład testów z zamiennikiem znajduje się w `lab3-support/demo/tests/test_parcel_service.py`.
 
 ### Krok 8 — aktualizacja dokumentacji
 
