@@ -8,6 +8,8 @@
 - [Kod pomocniczy LAB2 — ZIP]({{ '/2026_2027/lab2/lab2-support.zip' | relative_url }})
 - [Laboratorium 3]({{ '/2026_2027/lab3/' | relative_url }})
 - [Pakiet pomocniczy LAB3 — ZIP]({{ '/2026_2027/lab3/lab3-support.zip' | relative_url }})
+- [Laboratorium 4]({{ '/2026_2027/lab4/' | relative_url }})
+- [Pakiet pomocniczy LAB4 — ZIP]({{ '/2026_2027/lab4/lab4-support.zip' | relative_url }})
 
 ### Laboratorium
 

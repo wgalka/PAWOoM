@@ -99,17 +99,6 @@ sequenceDiagram
     end
 </pre>
 
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@12.2.0/dist/mermaid.esm.min.mjs";
-
-  mermaid.initialize({
-    startOnLoad: false,
-    theme: "neutral",
-    securityLevel: "strict"
-  });
-
-  await mermaid.run({ querySelector: "pre.mermaid" });
-</script>
 
 Baza jest źródłem prawdy, ale przy HIT aplikacja jej nie sprawdza. Błędne unieważnianie może więc dać nieaktualną odpowiedź. Cache nadaje się np. do opisu sali; o przyznaniu ostatniego miejsca nie decyduj wyłącznie na podstawie kopii.
 

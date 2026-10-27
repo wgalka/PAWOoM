@@ -1,0 +1,39 @@
+server:
+  address: 127.0.0.1
+  port: ${GATEWAY_PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: false
+          httpclient:
+            connect-timeout: 1000
+            response-timeout: 5s
+          default-filters:
+            - AddResponseHeader=X-Gateway, lab4
+          routes:
+            - id: lockers
+              uri: lb://LOCKER-SERVICE
+              predicates:
+                - Path=/api/lockers,/api/lockers/**
+              filters:
+                - StripPrefix=1
+            - id: delivery-check
+              uri: lb://PARCEL-SERVICE
+              predicates:
+                - Path=/api/delivery-check,/api/delivery-check/**
+              filters:
+                - StripPrefix=1
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: true
+    service-url:
+      defaultZone: ${GATEWAY_EUREKA_URL:http://127.0.0.1:8761/eureka/}
