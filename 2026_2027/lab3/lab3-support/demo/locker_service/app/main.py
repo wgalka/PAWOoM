@@ -7,18 +7,24 @@ from demo.shared.eureka import create_eureka_client
 
 
 LOCKERS = {
-    "KRK-1024": {"code": "KRK-1024", "status": "active", "free_compartments": 2}
+    "KRK-1024": {
+        "id": "KRK-1024",
+        "name": "Galeria",
+        "address": "Dluga 10",
+        "city": "Krakow",
+        "status": "online",
+    }
 }
 
 
 def create_app(eureka_client: EurekaClient | None = None) -> FastAPI:
-    client = eureka_client or create_eureka_client("LOCKER-SERVICE", 8101)
+    client = eureka_client if eureka_client is not None else create_eureka_client("LOCKER-SERVICE", 8101)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.eureka_client = client
-        await client.start()
         try:
+            await client.start()
             yield
         finally:
             await client.stop()
@@ -29,9 +35,9 @@ def create_app(eureka_client: EurekaClient | None = None) -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok", "service": "LOCKER-SERVICE"}
 
-    @app.get("/lockers/{locker_code}")
-    async def get_locker(locker_code: str) -> dict[str, str | int]:
-        locker = LOCKERS.get(locker_code)
+    @app.get("/lockers/{locker_id}")
+    async def get_locker(locker_id: str) -> dict[str, str]:
+        locker = LOCKERS.get(locker_id)
         if locker is None:
             raise HTTPException(status_code=404, detail="Locker not found")
         return locker
