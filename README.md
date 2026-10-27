@@ -2,18 +2,14 @@
 
 ## Instrukcje — 2026/2027
 
-- [Laboratorium 1]({{ '/2026_2027/lab1/' | relative_url }})
-- [Starter LAB1 — ZIP]({{ '/2026_2027/lab1/lab1-template.zip' | relative_url }})
-- [Laboratorium 2]({{ '/2026_2027/lab2/' | relative_url }})
-- [Kod pomocniczy LAB2 — ZIP]({{ '/2026_2027/lab2/lab2-support.zip' | relative_url }})
-- [Laboratorium 3]({{ '/2026_2027/lab3/' | relative_url }})
-- [Pakiet pomocniczy LAB3 — ZIP]({{ '/2026_2027/lab3/lab3-support.zip' | relative_url }})
-- [Laboratorium 4]({{ '/2026_2027/lab4/' | relative_url }})
-- [Pakiet pomocniczy LAB4 — ZIP]({{ '/2026_2027/lab4/lab4-support.zip' | relative_url }})
-- [Laboratorium 5]({{ '/2026_2027/lab5/' | relative_url }})
-- [Pakiet pomocniczy LAB5 — ZIP]({{ '/2026_2027/lab5/lab5-support.zip' | relative_url }})
-- [Laboratorium 6]({{ '/2026_2027/lab6/' | relative_url }})
-- [Pakiet pomocniczy LAB6 — ZIP]({{ '/2026_2027/lab6/lab6-support.zip' | relative_url }})
+| Instrukcja | Kod do pobrania |
+|---|---|
+| [Laboratorium 1]({{ '/2026_2027/lab1/' | relative_url }}) | [Starter LAB1 — ZIP]({{ '/2026_2027/lab1/lab1-template.zip' | relative_url }}) |
+| [Laboratorium 2]({{ '/2026_2027/lab2/' | relative_url }}) | [Kod pomocniczy LAB2 — ZIP]({{ '/2026_2027/lab2/lab2-support.zip' | relative_url }}) |
+| [Laboratorium 3]({{ '/2026_2027/lab3/' | relative_url }}) | [Pakiet pomocniczy LAB3 — ZIP]({{ '/2026_2027/lab3/lab3-support.zip' | relative_url }}) |
+| [Laboratorium 4]({{ '/2026_2027/lab4/' | relative_url }}) | [Pakiet pomocniczy LAB4 — ZIP]({{ '/2026_2027/lab4/lab4-support.zip' | relative_url }}) |
+| [Laboratorium 5]({{ '/2026_2027/lab5/' | relative_url }}) | [Pakiet pomocniczy LAB5 — ZIP]({{ '/2026_2027/lab5/lab5-support.zip' | relative_url }}) |
+| [Laboratorium 6]({{ '/2026_2027/lab6/' | relative_url }}) | [Pakiet pomocniczy LAB6 — ZIP]({{ '/2026_2027/lab6/lab6-support.zip' | relative_url }}) |
 
 ### Laboratorium
 
