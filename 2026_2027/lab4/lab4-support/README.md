@@ -1,12 +1,20 @@
 # Pakiet pomocniczy LAB4
 
-Należy wykorzystać ten pakiet razem z działającymi usługami i Eureką z LAB3. Pakiet zawiera bramkę Spring Cloud Gateway, pięć testów integracyjnych przykładu oraz szablon dokumentacji. Nie zawiera kopii usług ani nowej bazy danych.
+Pakiet należy wykorzystać razem z serwerem Eureka oraz dwiema usługami demonstracyjnymi z pakietu pomocniczego LAB3. Zawiera on gotowy szkielet bramki Spring Cloud Gateway (Server WebFlux), zestaw pięciu testów integracyjnych przykładu oraz szablon dokumentacji etapu LAB4. Pakiet nie zawiera kopii usług domenowych ani bazy danych.
 
-## Uruchomienie bramki
+## Wymagania wstępne
 
-Należy przygotować JDK 21 i Maven 3.9.x oraz wolny port `8080`. Bramkę należy uruchomić lokalnie, w tym samym systemie co usługi Python. Docker nie jest wymagany dla bramki. Eureka może nadal działać w wariancie wybranym na LAB3.
+- JDK 21 oraz Apache Maven 3.9.x (do uruchomienia bramki API Gateway),
+- Python 3.12 lub nowszy (do uruchomienia usług z LAB3 oraz testów integracyjnych),
+- wolny port `8080` dla bramki (oraz porty `8761`, `8101` i `8102` dla komponentów z LAB3).
 
-Z katalogu `lab4-support` należy wykonać:
+Bramkę należy uruchamiać lokalnie w tym samym systemie operacyjnym co usługi Python. Serwer Eureka może działać w wariancie wybranym na LAB3 (Docker Compose albo Maven).
+
+## Uruchomienie przykładu i weryfikacja bramki
+
+Przed uruchomieniem bramki należy w osobnych terminalach uruchomić serwer Eureka (`:8761`) oraz dwie usługi demonstracyjne z pakietu `lab3-support`: `LOCKER-SERVICE` (`:8101`) i `PARCEL-SERVICE` (`:8102`).
+
+Następnie z katalogu `lab4-support` należy wykonać:
 
 ```powershell
 java -version
@@ -15,9 +23,7 @@ Set-Location .\gateway
 mvn spring-boot:run
 ```
 
-Maven pobiera zależności podczas pierwszego uruchomienia. Należy wcześniej uruchomić Eurekę oraz demo LAB3: `LOCKER-SERVICE` na `8101` i `PARCEL-SERVICE` na `8102`. Szczegółowe polecenia znajdują się w pakiecie LAB3. Nie należy jednocześnie rejestrować własnych usług pod tymi samymi nazwami co demo.
-
-W nowym terminalu należy sprawdzić:
+Podczas pierwszego uruchomienia Maven pobierze wymagane zależności. Po starcie aplikacji w osobnym terminalu należy zweryfikować działanie endpointu własnego bramki oraz obu skonfigurowanych tras:
 
 ```powershell
 curl.exe -i http://127.0.0.1:8080/health
@@ -25,22 +31,22 @@ curl.exe -i http://127.0.0.1:8080/api/lockers/KRK-1024
 curl.exe -i http://127.0.0.1:8080/api/delivery-check/KRK-1024
 ```
 
-Należy oczekiwać trzech odpowiedzi `200`; odpowiedzi domenowe powinny zawierać nagłówek `X-Gateway: lab4`. Po rejestracji usług może być konieczne odczekanie na odświeżenie lokalnego rejestru klienta.
+Wszystkie trzy żądania powinny zwrócić kod `200 OK`, przy czym odpowiedzi z tras domenowych zawierają nagłówek `X-Gateway: lab4`. Po pierwszym zarejestrowaniu usług w Eurece może być konieczne krótkie odczekanie na odświeżenie lokalnej kopii rejestru w bramce.
 
-Konfigurację należy zmieniać w `gateway/src/main/resources/application.yml`, a następnie ponownie uruchamiać bramkę. Trasy używają nazw logicznych z Eureki, nie stałych portów usług. Gateway pobiera rejestr, ale sam się nie rejestruje, więc brak jego wpisu w panelu jest prawidłowy. Endpoint `/health` bramki potwierdza jedynie działanie jej procesu.
+Konfiguracja tras znajduje się w pliku `gateway/src/main/resources/application.yml`. Każda zmiana tego pliku wymaga ponownego uruchomienia procesu Maven (`Ctrl+C` i ponowne `mvn spring-boot:run`). Trasy odwołują się do usług przez nazwy logiczne z Eureki (`lb://LOCKER-SERVICE`, `lb://PARCEL-SERVICE`). Bramka pobiera rejestr (`fetch-registry: true`), ale sama nie rejestruje swojej instancji (`register-with-eureka: false`), dlatego nie pojawia się na liście instancji w panelu Eureki.
 
-Opcjonalne zmienne, ustawiane przed uruchomieniem Maven w tym samym terminalu:
+W razie potrzeby port nasłuchiwania bramki lub adres rejestru Eureka można zmienić przed uruchomieniem Mavena w tym samym terminalu:
 
 ```powershell
 $env:GATEWAY_PORT = '8080'
 $env:GATEWAY_EUREKA_URL = 'http://127.0.0.1:8761/eureka/'
 ```
 
-W odróżnieniu od `EUREKA_SERVER_URL` klienta Python z LAB3, adres `GATEWAY_EUREKA_URL` zawiera `/eureka/`. Nie należy przenosić bramki do kontenera bez zmiany adresów: `127.0.0.1` oznacza wtedy kontener, a nie komputer z usługami.
+Należy pamiętać, że w konfiguracji Spring Cloud adres `GATEWAY_EUREKA_URL` musi kończyć się sufiksem `/eureka/`.
 
-## Uruchomienie testów integracyjnych
+## Uruchomienie testów integracyjnych przykładu
 
-Przy działających czterech procesach (Eureka, dwie usługi demo, gateway), w nowym terminalu w katalogu `lab4-support` należy wykonać:
+Przy działających czterech procesach (Eureka Server, `LOCKER-SERVICE`, `PARCEL-SERVICE` oraz `API Gateway`), w nowym terminalu otwartym w katalogu `lab4-support` należy wykonać:
 
 ```powershell
 python -m venv .venv
@@ -48,10 +54,10 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pytest tests -q
 ```
 
-Testy wykonują prawdziwe żądania HTTP i niczego nie uruchamiają automatycznie. Należy oczekiwać `5 passed`. Błąd połączenia przy wyłączonym gateway nie oznacza błędu instalacji pytest. Przy innym porcie bramki należy ustawić `GATEWAY_URL`, np. `$env:GATEWAY_URL = 'http://127.0.0.1:8088'`.
+Testy w `tests/test_gateway_demo.py` wysyłają rzeczywiste żądania HTTP do uruchomionej bramki i oczekują wyniku `5 passed`. Jeżeli zmieniono port bramki, przed uruchomieniem `pytest` należy ustawić zmienną `$env:GATEWAY_URL = 'http://127.0.0.1:8088'`.
 
-Własny projekt wymaga innych nazw, ścieżek i danych testowych. Nie należy traktować pięciu testów demo jako własnych testów projektu. Scenariusze awarii należy wykonać oddzielnie, zgodnie z instrukcją główną.
+We własnym projekcie należy skopiować katalog `gateway` (bez `target/`) do repozytorium projektu z LAB1–LAB3, zastąpić trasy demonstracyjne własnymi oraz przygotować co najmniej cztery własne testy integracyjne zgodnie z główną instrukcją LAB4.
 
 ## Zatrzymanie procesów
 
-Bramkę należy zatrzymać skrótem `Ctrl+C` w jej terminalu. Następnie należy zatrzymać własne procesy usług oraz Eurekę metodą wybraną na LAB3. Nie należy usuwać baz ani cache w celu zatrzymania aplikacji.
+Proces bramki należy zatrzymać skrótem `Ctrl+C` w terminalu Mavena. Następnie należy zatrzymać obie usługi Python oraz serwer Eureka metodą wybraną w LAB3.
