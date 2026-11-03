@@ -129,7 +129,7 @@ Zgodnie z zagadnieniami wykładowymi sylabusa podczas integracji asynchronicznej
    Brokerzy wiadomości zapewniają zazwyczaj dostarczanie **co najmniej raz (*at-least-once delivery*)**: jeżeli konsument przetworzy wiadomość, ale połączenie zostanie zerwane tuż przed wysłaniem `basic_ack`, RabbitMQ dostarczy tę samą wiadomość ponownie. Dlatego każde zdarzenie musi posiadać unikatowy identyfikator `event_id`, a konsument musi być **idempotentny** — ponowne odebranie zdarzenia o już przetworzonym `event_id` nie może drugi raz zwiększyć licznika ani utworzyć zduplikowanego rekordu, lecz powinno zakończyć się bezpiecznym potwierdzeniem `ACK`.
 
 4. **Prawo Postela (*Tolerant Reader*) w kontraktach zdarzeń:**
-   Zgodnie z prawem Postela (*„bądź zachowawczy w tym, co wysyłasz, i tolerancyjny w tym, co przyjmujesz”*) konsument wiadomości powinien odczytywać z JSON wyłącznie pola potrzebne mu do wykonania zadania (np. `event_id`, `locker_id`, `parcel_id`) i ignorować dodatkowe, nieznane mu pola. Dzięki temu dodanie nowego pola przez producenta nie psuje działających konsumentów.
+   Zgodnie z prawem Postela (*„bądź zachowawczy w tym, co wysyłasz, i tolerancyjny w tym, co przyjmujesz”*) konsument wiadomości powinien odczytywać z JSON wyłącznie pola potrzebne mu do wykonania zadania (np. `event_id`, `locker_id`, `parcel_id`) i ignorować dodatkowe, nieznane mu pola. Dzięki temu dodanie nowego pola przez producenta nie narusza kompatybilności z działającymi konsumentami.
 
 ---
 
@@ -175,7 +175,7 @@ Następnie należy uruchomić kontener RabbitMQ z wtyczką Management:
 docker compose up -d rabbitmq
 ```
 
-Po kilku sekundach należy otworzyć w przeglądarce panel zarządzania pod adresem `http://127.0.0.1:15672/` i zalogować się danymi `guest` / `guest`. W zakładkach **Exchanges** oraz **Queues** będzie można na żywo obserwować tworzone wymienniki, powiązania oraz liczbę oczekujących wiadomości (*Ready* / *Unacked*).
+Po kilku sekundach należy otworzyć w przeglądarce panel zarządzania pod adresem `http://127.0.0.1:15672/` i zalogować się danymi `guest` / `guest`. W zakładkach **Exchanges** oraz **Queues** będzie można na bieżąco obserwować tworzone wymienniki, powiązania oraz liczbę oczekujących wiadomości (*Ready* / *Unacked*).
 
 ### Krok 2. Analiza implementacji producenta i konsumenta (`pika` / FastAPI)
 
@@ -239,7 +239,7 @@ Należy otworzyć i przeanalizować trzy kluczowe fragmenty kodu w pakiecie `lab
        locker["placed_parcels_count"] += 1
        event_history.setdefault(locker_id, []).append(event)
    ```
-   Jeżeli `event_id` znajduje się już w zbiorze `processed_event_ids`, funkcja kończy się bez ponownego zwiększania `placed_parcels_count`, a metoda `consume_available` wysyła `basic_ack`, zdejmując duplikat z kolejki.
+   Jeżeli `event_id` znajduje się już w zbiorze `processed_event_ids`, funkcja kończy się bez ponownego zwiększania `placed_parcels_count`, a metoda `consume_available` wysyła `basic_ack`, usuwając duplikat z kolejki.
 
 ### Krok 3. Uruchomienie usług i obserwacja przepływu zdarzenia w RabbitMQ
 
@@ -422,7 +422,7 @@ Należy wykonać pojedynczo poniższe eksperymenty i udokumentować ich przebieg
 
 | Scenariusz eksperymentalny | Działanie do wykonania | Oczekiwane zachowanie i wniosek |
 |---|---|---|
-| **1. Buforowanie wiadomości przy wyłączonym konsumencie** | Opublikowanie zdarzenia (lub zatrzymanie konsumenta po sprawdzeniu synchronicznym / bezpośrednia publikacja do kolejki, gdy proces konsumenta jest zatrzymany `Ctrl+C`) | Wiadomość nie ginie — w panelu RabbitMQ `15672` widnieje w kolejce jako `Ready: 1`. Po ponownym uruchomieniu procesu konsumenta i wywołaniu konsumpcji zdarzenie zostaje przetworzone i zatwierdzone przez `ACK` (`Ready: 0`) |
+| **1. Buforowanie wiadomości przy wyłączonym konsumencie** | Opublikowanie zdarzenia (lub zatrzymanie konsumenta po sprawdzeniu synchronicznym / bezpośrednia publikacja do kolejki, gdy proces konsumenta jest zatrzymany `Ctrl+C`) | Wiadomość nie zostaje utracona — w panelu RabbitMQ `15672` widnieje w kolejce jako `Ready: 1`. Po ponownym uruchomieniu procesu konsumenta i wywołaniu konsumpcji zdarzenie zostaje przetworzone i zatwierdzone przez `ACK` (`Ready: 0`) |
 | **2. Idempotentność przy duplikacie wiadomości** | Dwukrotne opublikowanie w panelu RabbitMQ Management (sekcja *Publish message* na kolejce lub przez skrypt/test) wiadomości JSON z identycznym `event_id` | Konsument pobiera obie wiadomości (`consumed_messages: 2`), ale skutek domenowy w bazie SQLite jest aplikowany tylko **jeden raz** (`unique_events_processed` zwiększa się o 1) |
 | **3. Odrzucenie operacji przez walidację (`422`) lub regułę biznesową (`409`)** | Wysłanie przez bramkę niepoprawnych lub konfliktowych danych do producenta | Producent zwraca `422` lub `409`; w kolejce RabbitMQ nie pojawia się żadna nowa wiadomość |
 | **4. Niedostępność brokera RabbitMQ** | Zatrzymanie kontenera RabbitMQ (`docker compose stop rabbitmq`) i próba wywołania publikacji oraz konsumpcji | Obie operacje zwracają kontrolowany kod `503 Service Unavailable` bez nieobsłużonego wyjątku i bez pozostawienia niespójnego stanu. Po `docker compose start rabbitmq` komunikacja wraca do działania |
@@ -446,7 +446,7 @@ W testach jednostkowych należy używać wstrzykiwanego `InMemoryEventBroker` (a
 |---|---|
 | Błąd połączenia z portem `5672` (`BrokerUnavailableError` / `503`) | Kontener `lab5-rabbitmq` nie jest uruchomiony lub jeszcze inicjalizuje proces brokera; należy sprawdzić `docker ps` oraz `docker compose logs rabbitmq` i upewnić się, że `RABBITMQ_URL` wskazuje `amqp://guest:guest@127.0.0.1:5672/%2F` |
 | Producent zwraca `201`, ale w panelu `15672` w kolejce jest `0` wiadomości | Kolejka konsumenta nie została jeszcze zadeklarowana i powiązana (`bind_queue`) przed publikacją wiadomości, albo `routing_key` producenta nie zgadza się z kluczem powiązania kolejki. Wiadomość wysłana na `Exchange` bez pasującej kolejki jest odrzucana |
-| Wiadomości w panelu RabbitMQ wiszą w stanie `Unacked` i wracają do `Ready` | Konsument pobrał wiadomość z `auto_ack=False`, ale rzucił wyjątek przed wywołaniem `basic_ack` lub wykonał `basic_nack(..., requeue=True)`. Należy sprawdzić logi konsumenta i poprawność formatu JSON |
+| Wiadomości w panelu RabbitMQ pozostają w stanie `Unacked` i powracają do stanu `Ready` | Konsument pobrał wiadomość z `auto_ack=False`, lecz zgłosił wyjątek przed wywołaniem `basic_ack` lub wykonał `basic_nack(..., requeue=True)`. Należy sprawdzić logi konsumenta i poprawność formatu JSON |
 | Po przetworzeniu zdarzenia w bazie SQLite endpoint `GET` nadal zwraca starą wartość | W obsłudze zdarzenia konsumenta zapomniano wywołać `cache.delete(resource_id)` po zatwierdzeniu transakcji w bazie, przez co usługa zwraca nieaktualny wpis `HIT` z Redis (LAB2) |
 | Stare testy jednostkowe z LAB1–LAB3 próbują łączyć się z RabbitMQ | Do funkcji `create_app(...)` w fixture testowych należy przekazać `event_broker=InMemoryEventBroker()`, aby odizolować testy jednostkowe od sieci |
 

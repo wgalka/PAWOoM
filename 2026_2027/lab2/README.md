@@ -170,7 +170,7 @@ Pobierz [kod pomocniczy LAB2 — ZIP](lab2-support.zip) i rozpakuj **obok własn
 | `README.md` | Uruchomienie oraz wskazówki integracji |
 | `README-LAB2-template.md` | Sekcje do dopisania do swojego README |
 
-Paczka pokazuje mechanizm na danych paczkomatu. Nie jest pełnym zamiennikiem `Locker Service` z LAB1: nie udostępnia HTTP ani operacji skrytek. Własne API i reguły rozwijasz w swoim repozytorium.
+Pakiet pomocniczy pokazuje mechanizm na danych paczkomatu. Nie jest pełnym zamiennikiem `Locker Service` z LAB1: nie udostępnia HTTP ani operacji skrytek. Własne API i reguły rozwijasz w swoim repozytorium.
 
 ### Uruchamianie i weryfikacja serwera cache (Redis)
 
@@ -228,7 +228,7 @@ class LockerRow(Base):
     status: Mapped[str] = mapped_column(String(20), default="online")
 ```
 
-Pełne importy i konfiguracja są w paczce. Klucz główny zapewnia unikalność ID. Zwykły indeks sam nie zapewnia unikalności. SQLite nie egzekwuje długości `String(n)` jak walidator — zachowaj ograniczenia Pydantic.
+Pełne importy i konfiguracja znajdują się w pakiecie pomocniczym. Klucz główny zapewnia unikalność ID. Zwykły indeks sam nie zapewnia unikalności. SQLite nie egzekwuje długości `String(n)` jak walidator — zachowaj ograniczenia Pydantic.
 
 ### Krok 1 — weryfikacja zapisu i odczytu w bazie
 
@@ -326,7 +326,7 @@ try {
 
 Przed odłączeniem potwierdź udane unieważnienie oraz MISS; jeśli widzisz BYPASS, najpierw napraw połączenie. Po wygaśnięciu wpisu (sprawdź TTL własnego klucza) ponów GET: oczekuj MISS i nazwy `Po awarii`. Przywrócenie konfiguracji TTL nie skraca czasu życia już zapisanego wpisu. We własnym API analogiczny eksperyment wymaga restartu Uvicorna po każdej zmianie adresu.
 
-**Ograniczenie:** po przywróceniu łączności stary wpis może istnieć aż do wygaśnięcia TTL. W paczce jest test tego przypadku. Commit w bazie i usunięcie klucza Redis nie są jedną transakcją. Prosty cache-aside nie zapewnia też ścisłej spójności przy równoległych zapisach i odczytach.
+**Ograniczenie:** po przywróceniu łączności stary wpis może istnieć aż do wygaśnięcia TTL. W pakiecie pomocniczym znajduje się test tego przypadku. Commit w bazie i usunięcie klucza Redis nie są jedną transakcją. Prosty cache-aside nie zapewnia też ścisłej spójności przy równoległych zapisach i odczytach.
 
 ### Analiza skutków niedostępności cache (Redis)
 
@@ -375,7 +375,7 @@ Wszystkie dotychczasowe operacje dotyczące przenoszonych danych muszą korzysta
 
 Dopisz do istniejących zależności `SQLAlchemy>=2.0,<2.1` i `redis>=5,<7`. Zachowaj zależności LAB1 i zainstaluj zaktualizowany plik.
 
-Możesz wykorzystać `database.py` z paczki. Dodaj modele ORM w osobnym module, np. `db_models.py`, aby nie nadpisać modeli Pydantic.
+Możesz wykorzystać `database.py` z pakietu pomocniczego. Dodaj modele ORM w osobnym module, np. `db_models.py`, aby nie nadpisać modeli Pydantic.
 
 ```text
 my-service/
@@ -391,7 +391,7 @@ my-service/
 └── README.md
 ```
 
-Użyj np. `sqlite:///./app.db`. Ścieżka jest względna do katalogu uruchomienia. Dodaj `*.db` i pliki pomocnicze SQLite do `.gitignore`. Zachowaj w repozytorium kod tworzący schemat. Dostarczony w paczce `database.py` włącza obsługę kluczy obcych (`PRAGMA foreign_keys=ON;`), która w SQLite jest domyślnie wyłączona — dzięki temu ograniczenia relacji (jeśli Twoja usługa ma powiązane tabele) są rygorystycznie sprawdzane.
+Użyj np. `sqlite:///./app.db`. Ścieżka jest względna do katalogu uruchomienia. Dodaj `*.db` i pliki pomocnicze SQLite do `.gitignore`. Zachowaj w repozytorium kod tworzący schemat. Dostarczony w pakiecie pomocniczym plik `database.py` włącza obsługę kluczy obcych (`PRAGMA foreign_keys=ON;`), która w SQLite jest domyślnie wyłączona — dzięki temu ograniczenia relacji (jeśli Twoja usługa ma powiązane tabele) są rygorystycznie sprawdzane.
 
 W `create_app()` przygotuj silnik i fabrykę sesji. Przekazuj konfigurację jako argument, aby test mógł wskazać inną bazę. `lifespan` uruchamia przygotowanie zasobów przed obsługą żądań i sprzątanie po zakończeniu pracy aplikacji.
 
@@ -442,7 +442,7 @@ def create_app(database_url=None, redis_client=None):
     return app
 ```
 
-Ustaw `CACHE_PREFIX` przed startem; w testach ustawisz go przez `monkeypatch`. Ten wariant przekazuje aplikacji odpowiedzialność za zamknięcie klienta Redis, także wstrzykniętego. Każdej instancji testowej przekaż nowy `MemoryRedis` z paczki (ma metodę `close()`). Repozytorium powinno zamykać sesję po każdej operacji; samo `engine.dispose()` nie zastępuje zamknięcia aktywnych sesji. Zachowaj dotychczasowy sposób uruchamiania fabryki z LAB1.
+Ustaw `CACHE_PREFIX` przed startem; w testach ustawisz go przez `monkeypatch`. Ten wariant przekazuje aplikacji odpowiedzialność za zamknięcie klienta Redis, także wstrzykniętego. Każdej instancji testowej przekaż nowy obiekt `MemoryRedis` z pakietu pomocniczego (ma metodę `close()`). Repozytorium powinno zamykać sesję po każdej operacji; samo `engine.dispose()` nie zastępuje zamknięcia aktywnych sesji. Zachowaj dotychczasowy sposób uruchamiania fabryki z LAB1.
 
 `create_all` tworzy brakujące tabele, ale nie aktualizuje istniejących kolumn. Nie kasuj bazy przy każdym uruchomieniu. Migracje Alembic są rozszerzeniem.
 
@@ -450,11 +450,11 @@ Ustaw `CACHE_PREFIX` przed startem; w testach ustawisz go przez `monkeypatch`. T
 
 Zaimplementuj listę, szczegóły i dotychczasowy zapis. Jeśli LAB1 miał tylko POST, dodaj jedną uzasadnioną modyfikację albo usunięcie do testowania unieważnienia. Przy samym PATCH wystarczą dane początkowe, które nie nadpisują istniejącego stanu.
 
-Kolejność: odczyt stanu → sprawdzenie reguły → zmiana → commit. Repozytorium z paczki pokazuje sesję na operację.
+Kolejność: odczyt stanu → sprawdzenie reguły → zmiana → commit. Repozytorium z pakietu pomocniczego pokazuje wykorzystanie osobnej sesji dla każdej operacji.
 
 Zachowaj 404, 409 i 422. Mapuj znany konflikt unikalności na 409; nie zamieniaj każdej awarii bazy w konflikt. Po błędzie wycofaj transakcję. Ponowny odczyt ma pokazać poprzedni stan.
 
-Zachowaj istniejący `response_model`. Do cache wkładaj serializowaną odpowiedź API, np. `response.model_dump(mode="json")`, a nie obiekt sesji lub surowy obiekt ORM.
+Zachowaj istniejący `response_model`. W pamięci podręcznej (cache) zapisuj serializowaną odpowiedź API, np. `response.model_dump(mode="json")`, a nie obiekt sesji lub surowy obiekt ORM.
 
 **Dowód:** zapis → GET → zatrzymanie Uvicorna → uruchomienie → GET. Zmiana ma przetrwać. Wykonaj odczyt bez starego cache, aby dowieść zapisu do bazy.
 
@@ -490,7 +490,7 @@ def get_room(room_id: str, request: Request, response: Response):
     return payload
 ```
 
-Repozytorium może zwracać słownik (jak w paczce) lub model `RoomResponse`. Konwersja przez `RoomResponse.model_validate` zapewnia wspólny kontrakt przed serializacją. Przy zwracaniu obiektu ORM skonfiguruj w modelu Pydantic `from_attributes=True`. Brak zasobu jest obsłużony zarówno dla `LookupError` z przykładu, jak i dla wyniku `None`; inne błędy nie są zamieniane na 404. Przy synchronicznym SQLAlchemy i kliencie Redis używaj endpointów `def`, jak w LAB1.
+Repozytorium może zwracać słownik (jak w pakiecie pomocniczym) lub model `RoomResponse`. Konwersja przez `RoomResponse.model_validate` zapewnia wspólny kontrakt przed serializacją. Przy zwracaniu obiektu ORM skonfiguruj w modelu Pydantic `from_attributes=True`. Brak zasobu jest obsłużony zarówno dla `LookupError` z przykładu, jak i dla wyniku `None`; inne błędy nie są zamieniane na 404. Przy synchronicznym SQLAlchemy i kliencie Redis używaj endpointów `def`, jak w LAB1.
 
 Po udanym zapisie unieważniaj właściwy klucz. Kolejność operacji: **najpierw commit w bazie, a dopiero potem delete w cache**:
 
@@ -523,7 +523,7 @@ Redis nie musi być szybszy od lokalnego SQLite dla jednego rekordu. Wykaż pomi
 
 ### Krok 6 — weryfikacja zachowania podczas awarii cache
 
-Obsłuż brak Redis podczas odczytu, zapisywania kopii i unieważniania. Ustaw krótkie timeouty i ogranicz ponowienia, jak w paczce. Błąd cache nie może cofnąć już zatwierdzonej operacji bazy.
+Obsłuż brak Redis podczas odczytu, zapisywania kopii i unieważniania. Ustaw krótkie limity czasu (timeouty) i ogranicz ponowienia, jak w pakiecie pomocniczym. Błąd cache nie może cofnąć już zatwierdzonej operacji bazy.
 
 Pokaż normalny scenariusz zmiany i scenariusz nieudanego unieważnienia. Opisz możliwość starej wartości po powrocie Redis. Jeśli domena nie toleruje opóźnienia, wybierz do cache inny rodzaj danych.
 
@@ -596,11 +596,11 @@ Zachowaj testy walidacji, konfliktu i reguły z LAB1. Testy z ZIP nie zastępuj�
 Wskazówki implementacji czterech testów w `TestClient(app)`:
 
 - **Trwałość:** zapisz rekord przez POST w pierwszym bloku `with TestClient(app1):`. Przy API z samym PATCH zmień istniejący rekord na wartość inną niż początkowa. Po wyjściu z bloku uruchom `app2` z tym samym plikiem bazy w `tmp_path`, ale **nowym, pustym `MemoryRedis`**. GET ma zwrócić zapisany stan z bazy, nie z kopii. Inicjalizacja nie może odtwarzać zmienionej wartości przy każdym starcie.
-- **HIT/MISS:** pierwszy odczyt przez GET sprawdza nagłówek `response.headers.get("X-Cache") == "MISS"`, kolejny ten sam odczyt potwierdza `response.headers.get("X-Cache") == "HIT"`. Aby dowieść, że przy HIT baza nie została powtórnie odpytana (zgodnie z tabelą wymagań), użyj licznika wywołań przez `monkeypatch` (jak w `test_miss_hit_and_invalidation` z paczki). Wymaga to udostępnienia instancji repozytorium w aplikacji (np. `app.state.repository` lub parametru fabryki `create_app`), po czym zliczasz wywołania metody repozytorium i upewniasz się, że wykonała tylko 1 odczyt po obu zapytaniach HTTP.
+- **HIT/MISS:** pierwszy odczyt przez GET sprawdza nagłówek `response.headers.get("X-Cache") == "MISS"`, kolejny ten sam odczyt potwierdza `response.headers.get("X-Cache") == "HIT"`. Aby dowieść, że przy HIT nie wykonano ponownego zapytania do bazy danych (zgodnie z tabelą wymagań), użyj licznika wywołań przez `monkeypatch` (jak w `test_miss_hit_and_invalidation` z pakietu pomocniczego). Wymaga to udostępnienia instancji repozytorium w aplikacji (np. `app.state.repository` lub parametru fabryki `create_app`), po czym zliczasz wywołania metody repozytorium i upewniasz się, że wykonała tylko 1 odczyt po obu zapytaniach HTTP.
 - **Unieważnienie:** po odczycie (HIT) wykonaj PATCH/PUT; następny GET ma zwrócić nową wartość i MISS. Jeśli wybraną operacją jest DELETE, sprawdź usunięcie klucza i odpowiedź 404 przy następnym GET. Nie wymagamy nagłówka MISS przy 404 ani przechowywania odpowiedzi 404 w cache.
-- **Awaria cache:** podmień klienta Redis na zamiennik zgłaszający awarię (`client.down = True`, jak w `MemoryRedis` z paczki pomocniczej) i upewnij się, że GET nadal zwraca kod 200 z nagłówkiem `"BYPASS"`, a zapis zostaje zatwierdzony w bazie danych.
+- **Awaria cache:** podmień klienta Redis na zamiennik zgłaszający awarię (`client.down = True`, jak w klasie `MemoryRedis` z pakietu pomocniczego) i upewnij się, że GET nadal zwraca kod 200 z nagłówkiem `"BYPASS"`, a zapis zostaje zatwierdzony w bazie danych.
 
-Jeśli wybrałeś logi zamiast `X-Cache`, w tych samych testach sprawdzaj znaczniki MISS/HIT/BYPASS przez `caplog` zamiast nagłówków. Nadal wymagane są asercje odpowiedzi API, stanu bazy i liczby odczytów repozytorium. Sam adapter z paczki nie loguje wszystkich tych znaczników — dodaj je w swojej warstwie obsługi odczytu.
+Jeśli wybrałeś logi zamiast `X-Cache`, w tych samych testach sprawdzaj znaczniki MISS/HIT/BYPASS przez `caplog` zamiast nagłówków. Nadal wymagane są asercje odpowiedzi API, stanu bazy i liczby odczytów repozytorium. Sam adapter z pakietu pomocniczego nie rejestruje wszystkich tych znaczników — dodaj je w swojej warstwie obsługi odczytu.
 
 Przykład fixture łączącej bazę w `tmp_path` oraz zamiennik Redis bez konieczności uruchamiania Dockera w testach automatycznych:
 
@@ -615,7 +615,7 @@ from app.main import create_app
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("CACHE_PREFIX", "lab2:test:room-service")
     db_url = "sqlite:///" + (tmp_path / "test.db").as_posix()
-    # MemoryRedis pochodzi z tests/test_storage.py z paczki pomocniczej.
+    # MemoryRedis pochodzi z tests/test_storage.py z pakietu pomocniczego.
     fake_redis = MemoryRedis()
     # Przykładowe przekazanie zależności — dostosuj do sygnatury create_app() ze swojego LAB1:
     app = create_app(database_url=db_url, redis_client=fake_redis)
@@ -625,7 +625,7 @@ def client(tmp_path, monkeypatch):
 
 Ręcznie sprawdź rzeczywisty Redis: MISS → HIT, wygaśnięcie TTL, restart Uvicorna oraz odłączenie i przywrócenie cache. Zapisz stan początkowy, żądanie, oczekiwany i rzeczywisty wynik oraz sposób resetu.
 
-Używaj własnego prefiksu także w testach; nie wykonuj `FLUSHALL` ani `FLUSHDB` na wspólnym serwerze. Zamiennik z paczki nie symuluje upływu TTL, więc tego zachowania nie potwierdza.
+Używaj własnego prefiksu także w testach; nie wykonuj `FLUSHALL` ani `FLUSHDB` na wspólnym serwerze. Zamiennik z pakietu pomocniczego nie symuluje upływu TTL, więc tego zachowania nie potwierdza.
 
 ### Krok 8 — uzupełnienie dokumentacji projektu
 
@@ -733,9 +733,9 @@ git push origin HEAD
 git push origin refs/tags/lab2
 ```
 
-`HEAD` wysyła bieżącą gałąź (np. `main` albo `master`); pracuj na gałęzi, nie w stanie detached HEAD (`git branch --show-current` powinno wypisać nazwę). Wysyłamy tylko tag `lab2`, nie wszystkie lokalne tagi. Jeśli tag już istnieje, nie nadpisuj go siłą — uzgodnij nazwę poprawionej wersji, np. `lab2-v2`. Gdy push zostanie odrzucony, najpierw zintegruj zmiany zdalne; nie używaj `--force`.
+`HEAD` wysyła bieżącą gałąź (np. `main` albo `master`); pracuj na gałęzi, nie w stanie detached HEAD (`git branch --show-current` powinno wypisać nazwę). Wysyłamy tylko tag `lab2`, nie wszystkie lokalne tagi. Jeśli tag już istnieje, nie należy wymuszać jego nadpisania — uzgodnij nazwę poprawionej wersji, np. `lab2-v2`. Gdy push zostanie odrzucony, najpierw zintegruj zmiany zdalne; nie używaj `--force`.
 
-Kod z paczki jest pomocą: oddawana wersja musi realizować własną domenę, regułę i testy. Nie wymagamy drugiej nowej aplikacji na tych zajęciach.
+Kod z pakietu pomocniczego stanowi materiał pomocniczy: oddawana wersja musi realizować własną domenę, regułę i testy. Nie wymagamy drugiej nowej aplikacji na tych zajęciach.
 
 Dla chętnych: PostgreSQL, migracja Alembic, pomiar liczby zapytań i czasu, cache listy z filtrami lub test równoległego odczytu i zapisu. W LAB3 rozwiniesz dotychczasową usługę o rejestrację i odnajdywanie przez Eurekę.
 

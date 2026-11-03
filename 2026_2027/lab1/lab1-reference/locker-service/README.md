@@ -109,7 +109,7 @@ Zacznij od restartu Uvicorna. Podczas scenariusza nie zapisuj zmian w kodzie, ż
 | 10 | Zatrzymaj serwer przez Ctrl+C i uruchom ponownie | Nowy magazyn z danymi początkowymi |
 | 11 | `GET /lockers/WAW-0001` i `GET /lockers/KRK-1024/compartments` | 404 dla WAW-0001, skrytki KRK-1024 ponownie free |
 
-Zapisz własny wynik rzeczywisty dla każdego kroku. Restart resetuje cały scenariusz. Dane żyją w magazynie aplikacji między żądaniami, ale nie są zapisywane poza pamięcią procesu.
+Zapisz własny wynik rzeczywisty dla każdego kroku. Restart resetuje cały scenariusz. Dane są przechowywane w magazynie aplikacji między żądaniami, ale nie są zapisywane poza pamięcią procesu.
 
 ## Porównanie architektur
 

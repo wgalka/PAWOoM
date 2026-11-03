@@ -11,7 +11,7 @@ Laboratorium realizuje szósty temat ćwiczeń laboratoryjnych z sylabusa: **„
 - izolacja sieciowa, rozwiązywanie nazw DNS w sieci kontenerowej oraz trwałość danych na wolumenach,
 - wzorce Monorepo i Multirepo, rola CI/CD oraz porównanie `Docker Compose` z orkiestracją w `Kubernetes`.
 
-Ćwiczenie spina wszystkie wcześniejsze etapy projektu w jedno powtarzalne środowisko uruchomieniowe:
+Ćwiczenie integruje wszystkie wcześniejsze etapy projektu w jedno powtarzalne środowisko uruchomieniowe:
 
 ```text
 LAB1 — pierwsza mikrousługa, kontrakt REST, walidacja (422) i reguła biznesowa (409)

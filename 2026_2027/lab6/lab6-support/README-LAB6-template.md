@@ -38,7 +38,7 @@
 | Pełny przepływ synchroniczny i cache (LAB1–LAB4) | Zapis i odczyt przez bramkę (`X-Gateway: lab4`, `X-Cache: MISS/HIT`, wywołanie usługa–usługa z LAB3) | Poprawne odpowiedzi HTTP i działanie cache w kontenerze Redis | | |
 | Pełny przepływ asynchroniczny (LAB5) | Publikacja zdarzenia przez bramkę i konsumpcja z kontenera RabbitMQ | Zdarzenie przetworzone idempotentnie, stan zaktualizowany, cache unieważniony | | |
 | Trwałość danych na wolumenie po odtworzeniu kontenera | Zapis danych, wykonanie `docker compose down` i ponowne `docker compose up -d`, odczyt danych przez bramkę | Rekord zapisany w SQLite na nazwanym wolumenie przetrwał usunięcie i odtworzenie kontenera | | |
-| Restart pojedynczego kontenera usługi | `docker compose restart <usluga>` i obserwacja logów oraz powrotu komunikacji przez bramkę | Kontener wstaje ponownie, odnawia rejestrację i przywraca obsługę tras | | |
+| Restart pojedynczego kontenera usługi | `docker compose restart <usluga>` i obserwacja logów oraz powrotu komunikacji przez bramkę | Kontener uruchamia się ponownie, odnawia rejestrację i przywraca obsługę tras | | |
 
 ### Wykorzystana dokumentacja techniczna (EK_03) i użycie AI
 

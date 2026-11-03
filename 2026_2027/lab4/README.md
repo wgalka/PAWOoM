@@ -98,7 +98,7 @@ flowchart LR
 Linie ciągłe oznaczają wywołania przesyłające dane domenowe i operacje biznesowe, natomiast linie przerywane oznaczają ruch administracyjny związany z rejestrem usług. Należy zwrócić uwagę na trzy zasady architektoniczne:
 
 1. **Lokalna kopia rejestru:** Bramka, podobnie jak klient `py-eureka-client` z LAB3, pobiera i okresowo odświeża lokalną kopię rejestru z Eureki. Nie wysyła osobnego zapytania do Eureki przed każdym żądaniem HTTP klienta.
-2. **Bezpośrednia komunikacja wewnętrzna:** Istniejącego wywołania usługa–usługa z LAB3 (`Usługa 2 -> Usługa 1`) nie należy kierować z powrotem przez API Gateway. Bramka obsługuje ruch wejściowy od klienta zewnętrznego, a usługi komunikują się wewnątrz systemu bezpośrednio po adresach pobranych z Eureki. Skierowanie ruchu wewnętrznego przez bramkę dodałoby zbędny przeskok sieciowy i uzależniło komunikację wewnętrzną od dostępności procesu bramki.
+2. **Bezpośrednia komunikacja wewnętrzna:** Istniejącego wywołania usługa–usługa z LAB3 (`Usługa 2 -> Usługa 1`) nie należy kierować z powrotem przez API Gateway. Bramka obsługuje ruch wejściowy od klienta zewnętrznego, a usługi komunikują się wewnątrz systemu bezpośrednio po adresach pobranych z Eureki. Skierowanie ruchu wewnętrznego przez bramkę wprowadziłoby zbędne pośrednie połączenie sieciowe i uzależniło komunikację wewnętrzną od dostępności procesu bramki.
 3. **Niezależność warstwy danych:** Baza SQLite oraz serwer Redis skonfigurowane w LAB2 należą wyłącznie do usługi domenowej. Bramka nie łączy się z bazą danych ani z Redisem.
 
 ### Konfiguracja trasy, warunków dopasowania i filtrów (Spring Cloud Gateway)
@@ -122,11 +122,11 @@ Wprowadzenie API Gateway porządkuje kontrakt zewnętrzny systemu: klient korzys
 Rozwiązanie to wiąże się jednak z kosztami inżynierskimi:
 
 - dochodzi kolejny proces wymagający konfiguracji, uruchomienia i monitorowania,
-- każde żądanie klienta pokonuje dodatkowy przeskok sieciowy (`Klient -> Gateway -> Usługa`),
+- każde żądanie klienta przechodzi przez dodatkowy etap komunikacji sieciowej (`Klient -> Gateway -> Usługa`),
 - pojedyncza instancja bramki stanowi pojedynczy punkt awarii (*Single Point of Failure*) dla ruchu przychodzącego przez port `8080`,
 - sama obecność bramki nie blokuje dostępu do lokalnych portów usług (`8101`, `8102`), nie uwierzytelnia użytkowników i nie szyfruje ruchu.
 
-W ramach laboratorium wszystkie komponenty należy uruchamiać wyłącznie lokalnie na adresie `127.0.0.1` (`localhost`). Nie należy wystawiać portów na zewnętrzne interfejsy sieciowe ani otwierać ruchu w zaporze systemowej.
+W ramach laboratorium wszystkie komponenty należy uruchamiać wyłącznie lokalnie na adresie `127.0.0.1` (`localhost`). Nie należy udostępniać portów na zewnętrznych interfejsach sieciowych ani otwierać ruchu w zaporze systemowej.
 
 ---
 
@@ -231,7 +231,7 @@ Należy otworzyć i przeanalizować trzy pliki znajdujące się w katalogu `lab4
        }
    }
    ```
-   Klasa uruchamia serwer reaktywny Spring Boot i wystawia lokalny endpoint kontrolny `GET /health` samego procesu bramki. Nie zawiera żadnego kodu domenowego.
+   Klasa uruchamia serwer reaktywny Spring Boot i udostępnia lokalny endpoint kontrolny `GET /health` samego procesu bramki. Nie zawiera żadnego kodu domenowego.
 
 2. **Zależności w `pom.xml`:**
    Projekt wykorzystuje trzy główne startery:
@@ -356,7 +356,7 @@ Porównanie trzech przypadków kodu `404`:
 |---|---|---|---|---|
 | `GET /api/lockers/UNKNOWN` (`StripPrefix=1`) | W kodzie endpointu `LOCKER-SERVICE` (brak rekordu w danych domenowych) | `GET /lockers/UNKNOWN` | `{"detail":"Locker not found"}` | Tak (odpowiedź przeszła przez trasę) |
 | `GET /not-a-route` (`StripPrefix=1`) | W bramce `API Gateway` (żadna trasa nie pasuje do `Path`) | Brak wpisu (żądanie nie opuściło bramki) | Domyślny JSON błędu Spring WebFlux | Nie (żadna trasa nie została uruchomiona) |
-| `GET /api/lockers/KRK-1024` (`StripPrefix=2`) | W routerze FastAPI `LOCKER-SERVICE` (błędna ścieżka po ucięciu dwóch segmentów `/api` i `/lockers`) | `GET /KRK-1024` | `{"detail":"Not Found"}` | Tak (żądanie przeszło przez trasę zepsutą filtrem) |
+| `GET /api/lockers/KRK-1024` (`StripPrefix=2`) | W routerze FastAPI `LOCKER-SERVICE` (błędna ścieżka po usunięciu dwóch segmentów `/api` i `/lockers`) | `GET /KRK-1024` | `{"detail":"Not Found"}` | Tak (żądanie przeszło przez trasę z błędnie skonfigurowanym filtrem) |
 
 Sam kod statusu HTTP `404` nie rozstrzyga więc, który komponent wygenerował odpowiedź i z jakiej przyczyny — należy zawsze zestawiać status z treścią odpowiedzi, nagłówkami oraz logami dostępowymi usług.
 
@@ -445,8 +445,8 @@ W pliku `gateway/src/main/resources/application.yml` należy zastąpić trasy de
 
 - należy zdefiniować **co najmniej dwie jawne trasy domenowe** — minimum po jednej prowadzącej do każdej z dwóch własnych usług,
 - w polu `uri` każdej trasy należy użyć schematu `lb://NAZWA-USŁUGI` zgodnego z nazwą zgłaszaną przez daną usługę do Eureki (np. `lb://ROOM-SERVICE` oraz `lb://RESERVATION-SERVICE`),
-- nie wolno wpisywać w `uri` sztywnych adresów ani portów instancji (np. `http://127.0.0.1:8101`),
-- należy utrzymać `discovery.locator.enabled: false` (brak automatycznego wystawiania wszystkich usług),
+- nie należy wpisywać w `uri` stałych adresów ani portów instancji (np. `http://127.0.0.1:8101`),
+- należy utrzymać `discovery.locator.enabled: false` (brak automatycznego udostępniania wszystkich usług),
 - należy zachować filtr `StripPrefix=1` (lub odpowiednią liczbę segmentów dopasowaną do zaprojektowanego prefiksu), domyślny filtr `AddResponseHeader=X-Gateway, lab4` oraz jawne limity czasu `connect-timeout` i `response-timeout`.
 
 Przykład konfiguracji sekcji `routes` dla przykładowej domeny rezerwacji sal:
@@ -510,7 +510,7 @@ Po potwierdzeniu w panelu `http://127.0.0.1:8761/`, że obie usługi własne maj
    Należy wysłać przez bramkę żądanie naruszające walidację modelu Pydantic (oczekiwane `422 Unprocessable Entity`) oraz żądanie naruszające regułę biznesową z LAB1 (oczekiwane `409 Conflict`). Należy potwierdzić, że bramka przekazuje dokładny kod i ciało błędu z FastAPI (wraz z `X-Gateway: lab4`), a odrzucona operacja nie zmienia stanu w bazie SQLite ani w cache Redis.
 
 4. **Weryfikacja odczytu z drugiej usługi i komunikacji usługa–usługa z LAB3 przez bramkę:**
-   Należy wywołać przez bramkę endpoint drugiej usługi, który pod spodem odnajduje pierwszą usługę w Eurece i pobiera z niej dane:
+   Należy wywołać przez bramkę endpoint drugiej usługi, który wewnętrznie odnajduje pierwszą usługę w Eurece i pobiera z niej dane:
    ```powershell
    curl.exe -i http://127.0.0.1:8080/api/<zasob-uslugi-2>/<id>
    ```
@@ -664,7 +664,7 @@ W ramach LAB4 nie należy implementować uwierzytelniania i autoryzacji użytkow
 | **Punkt A — ciągłość LAB1–LAB3** | Działają obie usługi własnego projektu, baza SQLite i cache Redis pierwszej usługi, rejestracja w Eurece oraz dotychczasowe testy jednostkowe |
 | **Punkt B — projekt kontraktu wejściowego** | Uzupełniona tabela tras dla własnej domeny, uzasadnienie wyboru udostępnionych ścieżek oraz rozdzielenie odpowiedzialności komponentów |
 | **Punkt C — konfiguracja bramki** | Co najmniej dwie jawne trasy w `application.yml` kierujące ruch przez `lb://NAZWA-USŁUGI` do dwóch różnych usług, z poprawnym `StripPrefix` i nagłówkiem diagnostycznym |
-| **Punkt D — spójność operacji API** | Przez port bramki (`8080`) działają: odczyt z pierwszej usługi (z widocznymi nagłówkami `X-Gateway` i `X-Cache`), zapis/modyfikacja unieważniająca cache, odczyt z drugiej usługi (wykonujący pod spodem wywołanie z LAB3) oraz kody błędów `404`, `409`, `422` |
+| **Punkt D — spójność operacji API** | Przez port bramki (`8080`) działają: odczyt z pierwszej usługi (z widocznymi nagłówkami `X-Gateway` i `X-Cache`), zapis/modyfikacja unieważniająca cache, odczyt z drugiej usługi (wykonujący wewnętrznie wywołanie z LAB3) oraz kody błędów `404`, `409`, `422` |
 | **Punkt E — analiza awarii** | Przeprowadzone i udokumentowane scenariusze zatrzymania każdej z usług, ponownego uruchomienia usługi oraz zatrzymania bramki |
 | **Punkt F — testy integracyjne** | Przechodzą co najmniej cztery własne testy integracyjne wywołujące API przez bramkę oraz wszystkie wcześniejsze testy projektu |
 
@@ -679,7 +679,7 @@ Każda osoba (również przy pracy w parze) powinna umieć samodzielnie odpowied
 5. Po jakich cechach odpowiedzi HTTP i logów można odróżnić `404` wynikające z braku trasy w bramce od `404` wynikającego z braku rekordu w bazie usługi?
 6. Dlaczego zatrzymanie pierwszej usługi wpływa nie tylko na jej własną trasę w bramce, ale również na endpoint drugiej usługi korzystający z wywołania z LAB3?
 
-Podczas odbioru każda osoba powinna również wykonać drobną modyfikację na żywo (np. zmianę prefiksu zewnętrznego wybranej trasy na `/api/v2/...`, dopasowanie wartości `StripPrefix`, wskazanie wynikowej ścieżki w usłudze i aktualizację odpowiedniego testu integracyjnego).
+Podczas odbioru każda osoba powinna również wykonać samodzielnie drobną modyfikację konfiguracji (np. zmianę prefiksu zewnętrznego wybranej trasy na `/api/v2/...`, dopasowanie wartości `StripPrefix`, wskazanie wynikowej ścieżki w usłudze i aktualizację odpowiedniego testu integracyjnego).
 
 ### Kryteria oceny etapu LAB4
 

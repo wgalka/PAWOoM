@@ -77,7 +77,7 @@ Zgodnie z problematyką wykładową sylabusa należy rozróżnić trzy poziomy i
 | **Warstwa izolacji** | Brak (wspólny sprzęt i jeden system operacyjny) | Pełna wirtualizacja sprzętu przez *Hypervisor*; każda VM uruchamia własne jądro systemu (*Guest OS*) | Izolacja procesów na poziomie przestrzeni nazw (*namespaces*) i grup kontrolnych (*cgroups*) wspólnego jądra systemu |
 | **Narzut zasobów i rozmiar** | Brak narzutu wirtualizacji, trudne dzielenie zależności | Duży (gigabajty obrazu, osobny RAM dla każdego systemu gościa) | Niski (dziesiątki lub setki megabajtów, współdzielone jądro systemu) |
 | **Czas uruchomienia** | Minuty | Od kilkunastu sekund do kilku minut | Ułamki sekund do kilku sekund |
-| **Powtarzalność środowiska** | Niska („u mnie działa” przez różnice bibliotek w systemie) | Wysoka, lecz kosztowna w budowaniu i dystrybucji | Bardzo wysoka — obraz zawiera dokładne wersje języka, bibliotek i zależności aplikacji |
+| **Powtarzalność środowiska** | Niska (błędy wynikające z różnic wersji bibliotek i konfiguracji w systemie gospodarza) | Wysoka, lecz kosztowna w budowaniu i dystrybucji | Bardzo wysoka — obraz zawiera dokładne wersje języka, bibliotek i zależności aplikacji |
 
 ### Budowa obrazu, warstwy i budowanie wieloetapowe (`Dockerfile`)
 
@@ -312,9 +312,9 @@ Następnie należy uzupełnić główny plik `README.md` projektu o sekcję LAB6
 | Objaw problemu | Przyczyna i sposób rozwiązania |
 |---|---|
 | Kontener usługi Python kończy pracę natychmiast po starcie (`Exited (1)`) | Należy sprawdzić logi: `docker compose logs <nazwa-uslugi>`. Częstą przyczyną jest brak uprawnień zapisu do katalogu `/data` dla SQLite albo błędna ścieżka modułu w `CMD` |
-| Bramka działa na hoście pod `:8080/health` w LAB4, a w kontenerze połączenie do `127.0.0.1:8080` jest odrzucane | W `application.yml` bramki ustawiono na sztywno `server.address: 127.0.0.1` zamiast `0.0.0.0` wewnątrz kontenera. Należy użyć `address: ${SERVER_ADDRESS:127.0.0.1}` i przekazać `SERVER_ADDRESS: 0.0.0.0` w `compose.yaml` |
+| Bramka działa na hoście pod `:8080/health` w LAB4, a w kontenerze połączenie do `127.0.0.1:8080` jest odrzucane | W pliku `application.yml` bramki ustawiono stałą wartość `server.address: 127.0.0.1` zamiast `0.0.0.0` wewnątrz kontenera. Należy użyć `address: ${SERVER_ADDRESS:127.0.0.1}` i przekazać `SERVER_ADDRESS: 0.0.0.0` w `compose.yaml` |
 | Usługa jest `UP` w Eurece, ale bramka lub druga usługa zwraca `500` / `503` przy wywołaniu | Usługa zarejestrowała w Eurece `INSTANCE_HOST=localhost` albo Uvicorn w kontenerze został uruchomiony bez `--host 0.0.0.0`. Należy ustawić `INSTANCE_HOST` i `INSTANCE_IP` na nazwę usługi z `compose.yaml` |
-| Usługa przy starcie zgłasza błąd połączenia z RabbitMQ lub Eureką | Kontener usługi wystartował zanim serwer Eureka lub RabbitMQ zakończył inicjalizację. Należy skonfigurować `healthcheck` oraz `depends_on` z `condition: service_healthy` |
+| Usługa przy starcie zgłasza błąd połączenia z RabbitMQ lub Eureką | Kontener usługi został uruchomiony, zanim serwer Eureka lub RabbitMQ zakończył inicjalizację. Należy skonfigurować `healthcheck` oraz `depends_on` z `condition: service_healthy` |
 | Dane w bazie SQLite znikają po `docker compose down` i `docker compose up -d` | Ścieżka `DATABASE_URL` wskazuje plik wewnątrz ulotnego systemu plików kontenera (np. `sqlite:///./app.db`) zamiast katalogu zamontowanego z nazwanego wolumenu (np. `sqlite:////data/app.db`) |
 
 ---

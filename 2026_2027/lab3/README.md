@@ -32,7 +32,7 @@ Po laboratorium należy umieć:
 
 ## 2. Zachowanie ciągłości projektu
 
-Należy kontynuować repozytorium z LAB1 i LAB2. Nie należy przepisywać działającej usługi ani zastępować jej przykładem z paczki. Przed zmianami należy uruchomić dotychczasowe testy i zapisać działający etap w Git.
+Należy kontynuować repozytorium z LAB1 i LAB2. Nie należy przepisywać działającej usługi ani zastępować jej przykładem z pakietu pomocniczego. Przed zmianami należy uruchomić dotychczasowe testy i zapisać działający etap w Git.
 
 Należy zachować:
 
@@ -113,7 +113,7 @@ sequenceDiagram
 
 Klient `py-eureka-client` pobiera i okresowo odświeża lokalną kopię rejestru, z której wybiera instancję. Nie jest wymagane osobne zapytanie do Eureki przed każdym żądaniem biznesowym. Kopia rejestru jest czymś innym niż cache danych w Redis z LAB2. Rejestracja i heartbeat nie gwarantują, że instancja odpowie na każde żądanie; adres może być chwilowo nieaktualny, a zależna usługa może zwrócić błąd.
 
-Stan `UP` nie jest dowodem poprawności reguły biznesowej, bazy ani Redis. W tym przykładzie Eureka nie odpytuje samodzielnie endpointu `/health`. Po utracie połączenia z Eureką wcześniej poznane adresy mogą nadal pozwalać na wywołania; uruchomienie nowego klienta bez kopii rejestru to inna sytuacja.
+Stan `UP` nie jest dowodem poprawności reguły biznesowej, bazy ani Redis. W tym przykładzie Eureka nie wysyła samodzielnie zapytań kontrolnych do endpointu `/health`. Po utracie połączenia z Eureką wcześniej poznane adresy mogą nadal pozwalać na wywołania; uruchomienie nowego klienta bez kopii rejestru to inna sytuacja.
 
 ### Konfiguracja a odnajdywanie
 
@@ -191,7 +191,7 @@ python -m venv .venv
 
 Pakiet pomocniczy przypina `py-eureka-client` do wersji `0.13.3`, aby przykład był odtwarzalny. W projekcie studenta należy dodać tę zależność do `requirements.txt` i używać tej samej wersji podczas laboratorium.
 
-Przed uruchomieniem procesów można wykonać `.\.venv\Scripts\python.exe -m pytest -q`. Testy z paczki korzystają z zamiennika klienta i nie wymagają Javy, Dockera ani działającej Eureki. Nie zastępują jednak sprawdzenia rzeczywistej komunikacji.
+Przed uruchomieniem procesów można wykonać `.\.venv\Scripts\python.exe -m pytest -q`. Testy z pakietu pomocniczego korzystają z zamiennika klienta i nie wymagają Javy, Dockera ani działającej Eureki. Nie zastępują jednak sprawdzenia rzeczywistej komunikacji.
 
 ### Uruchomienie przykładu wspólnego
 
@@ -609,7 +609,7 @@ git push origin HEAD
 git push origin refs/tags/lab3
 ```
 
-Jeżeli tag `lab3` już istnieje, nie należy nadpisywać go siłą. Należy uzgodnić oznaczenie poprawionej wersji. Nie należy wysyłać lokalnych konfiguracji, haseł ani plików `.env`.
+Jeżeli tag `lab3` już istnieje, nie należy wymuszać jego nadpisania. Należy uzgodnić oznaczenie poprawionej wersji. Nie należy wysyłać lokalnych konfiguracji, haseł ani plików `.env`.
 
 ## 10. Dokumentacja techniczna
 

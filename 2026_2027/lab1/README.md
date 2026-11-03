@@ -566,7 +566,7 @@ Wypisz 3–5 pojęć używanych w swojej domenie i krótko je zdefiniuj. Wskaż,
 
 Naszkicuj jedno przyszłe wywołanie HTTP między usługami: nadawca, odbiorca, metoda, ścieżka, przykładowe żądanie i odpowiedź oraz zachowanie przy niedostępności odbiorcy. To projekt kontraktu — nie implementuj jeszcze komunikacji ani sprawdzania danych w drugiej usłudze.
 
-Narysuj trzy małe warianty własnego systemu: monolit, modularny monolit i mikrousługi. Wystarczą prostokąty i strzałki z podpisami „wywołanie w kodzie” lub „HTTP”. Zaznacz granice odpowiedzialności, procesy i właścicieli danych. Schematy umieść w README; wykorzystasz je w podsumowaniu.
+Przygotuj trzy uproszczone diagramy architektury własnego systemu: monolit, modularny monolit i mikrousługi. Na diagramach oznacz komponenty oraz kierunek i sposób komunikacji („wywołanie w kodzie” lub „HTTP”). Zaznacz granice odpowiedzialności, procesy i właścicieli danych. Diagramy umieść w README; wykorzystasz je w podsumowaniu.
 
 **Checkpoint przed kodowaniem:** wyjaśnij prowadzącemu zakres pierwszej usługi, rolę drugiej i jedną regułę, za którą odpowiada pierwsza.
 

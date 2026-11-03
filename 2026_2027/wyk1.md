@@ -86,7 +86,7 @@ Automation Service    — reguły automatyzacji
 Alert Service         — alarmy i incydenty
 ```
 
-Mikrousługa nie jest po prostu pojedynczą tabelą wystawioną przez REST.
+Mikrousługa nie jest po prostu pojedynczą tabelą udostępnioną przez REST.
 
 ---
 
@@ -127,7 +127,7 @@ Mikroserwisy nie rozwiązują jednak wszystkich problemów. Awaria może objąć
 
 Może też wystąpić awaria kaskadowa: jedna niedostępna usługa powoduje błędy w kolejnych usługach. Dlatego potrzebne są timeouty, retry, circuit breaker, kolejki, cache i monitorowanie.
 
-**Wniosek:** w monolicie błąd zabijający wspólny proces może wyłączyć wszystkie moduły naraz. W mikroserwisach podobny błąd zwykle zabija tylko proces jednej usługi, o ile pozostałe usługi nie są od niej krytycznie zależne.
+**Wniosek:** w monolicie błąd powodujący przerwanie działania wspólnego procesu może wyłączyć wszystkie moduły jednocześnie. W mikroserwisach podobny błąd przerywa działanie wyłącznie procesu jednej usługi, o ile pozostałe usługi nie są od niej krytycznie zależne.
 
 ### Korzyści
 

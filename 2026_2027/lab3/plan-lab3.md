@@ -54,10 +54,10 @@ Docker Compose uruchamia wyłącznie przygotowaną infrastrukturę Eureka. Stude
 | Czas | Etap | Działanie i rezultat |
 |---:|---|---|
 | 10 min | Pojęcia | Usługa, instancja, rejestr, heartbeat i różnica między discovery a gateway |
-| 15 min | Przykład | Dashboard, dwie usługi FastAPI, call po nazwie i wskazanie kodu klienta |
+| 15 min | Przykład | Panel Eureka, dwie usługi FastAPI, wywołanie po nazwie logicznej i wskazanie kodu klienta |
 | 15 min | Projekt | Powrót do granic i kontraktu z LAB1; wybór drugiej usługi i jej endpointu |
 | 40 min | Implementacja | Osobny proces, port i rejestracja każdej usługi; żądanie przez nazwę logiczną |
-| 25 min | Weryfikacja | Test jednostkowy z fake klientem, test ręczny, kontrolowana awaria zależności |
+| 25 min | Weryfikacja | Test jednostkowy z zamiennikiem klienta, test ręczny, kontrolowana awaria zależności |
 | 10 min | Odbiór | Wskazanie dowodów, dokumentacja i zapis etapu w Git |
 | 5 min | Rezerwa | Opóźnienie rejestracji lub różnice konfiguracji środowiska |
 

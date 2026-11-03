@@ -62,10 +62,10 @@ Przed rozpoczęciem zajęć należy:
 |---:|---|---|
 | 15 min | Pojęcia | Porównanie API Gateway, Eureki, BFF i usług domenowych; analiza struktury trasy (`uri`, `Path`, `StripPrefix`) |
 | 20 min | Przykład wspólny | Uruchomienie bramki z `lab4-support` nad demo z LAB3, analiza dwóch różnych błędów `404` i eksperyment ze `StripPrefix=2` |
-| 15 min | Decyzje projektowe | Zaprojektowanie tabeli tras własnego projektu i wybór endpointów wystawianych przez `/api/...` |
+| 15 min | Decyzje projektowe | Zaprojektowanie tabeli tras własnego projektu i wybór endpointów udostępnianych przez `/api/...` |
 | 35 min | Konfiguracja projektu | Włączenie katalogu `gateway` do repozytorium studenta i konfiguracja tras `lb://` do obu własnych usług |
 | 25 min | Weryfikacja i awarie | Sprawdzenie odczytu (`X-Gateway` + `X-Cache`), zapisu, błędów `409`/`422`, przepływu z LAB3 oraz scenariuszy zatrzymania procesów |
-| 10 min | Odbiór | Prezentacja działających tras własnego projektu i drobna modyfikacja konfiguracji na żywo |
+| 10 min | Odbiór | Prezentacja działających tras własnego projektu i samodzielna modyfikacja konfiguracji podczas odbioru |
 
 ## 5. Wymagania odbioru i kryteria zaliczenia
 

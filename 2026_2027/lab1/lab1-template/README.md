@@ -66,7 +66,7 @@ Osobno uruchom Uvicorna, wykonaj zapis i odczyt przez HTTP, zatrzymaj go i uruch
 
 ## 5. Porównanie architektur
 
-Narysuj małe schematy tego samego systemu: monolit, modularny monolit i mikrousługi. Zaznacz procesy, granice, dane i sposób komunikacji. Wyjaśnij:
+Przygotuj uproszczone diagramy architektury tego samego systemu: monolit, modularny monolit i mikrousługi. Zaznacz procesy, granice, dane i sposób komunikacji. Wyjaśnij:
 
 1. Dlaczego twoja usługa może być mikrousługą i czym różni się od klasy/modułu?
 2. Jak wyglądałby system jako monolit?
