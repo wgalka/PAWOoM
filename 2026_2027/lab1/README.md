@@ -562,7 +562,9 @@ Zaproponuj co najmniej dwie usługi przyszłego systemu. Teraz zaimplementujesz 
 | Pierwsza — implementowana na LAB1 | ... | ... | ... | ... |
 | Druga — planowana na później | ... | ... | ... | ... |
 
-Wypisz 3–5 pojęć używanych w swojej domenie i krótko je zdefiniuj. Wskaż, kto może zmieniać poszczególne dane. Wyjaśnij, dlaczego podział wynika z odpowiedzialności biznesowej, a nie wyłącznie z tabel w bazie. Granica modelu i znaczenia jego pojęć jest punktem wyjścia do poznania *bounded context* w DDD; nie oznacza automatycznie osobnej usługi dla każdej encji.
+Wypisz 3–5 pojęć używanych w swojej domenie i krótko je zdefiniuj. Wskaż, kto może zmieniać poszczególne dane. Wyjaśnij, dlaczego podział wynika z odpowiedzialności biznesowej, a nie wyłącznie z tabel w bazie.
+
+W DDD należy określić *bounded context* (kontekst ograniczony), czyli zakres, w którym obowiązują dany model i określone znaczenia pojęć. Na przykład w obsłudze rezerwacji „sala” może oznaczać identyfikator i liczbę miejsc, a w obsłudze technicznej — pomieszczenie z wyposażeniem i historią usterek. Należy ustalić, jakich informacji potrzebuje każda część systemu i za jakie operacje odpowiada. Nie należy automatycznie tworzyć osobnej usługi dla każdej encji.
 
 Naszkicuj jedno przyszłe wywołanie HTTP między usługami: nadawca, odbiorca, metoda, ścieżka, przykładowe żądanie i odpowiedź oraz zachowanie przy niedostępności odbiorcy. To projekt kontraktu — nie implementuj jeszcze komunikacji ani sprawdzania danych w drugiej usłudze.
 

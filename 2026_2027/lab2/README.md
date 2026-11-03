@@ -30,7 +30,7 @@ Po laboratorium powinieneś:
 | Lista, szczegóły, zapis i health | Zachowujesz endpointy, identyfikatory i JSON |
 | Dane w pamięci | Trwały zapis do bazy |
 | Reguła biznesowa, 404, 409, 422 | Te same zachowania po zmianie magazynu |
-| Świeża aplikacja w testach | Osobna baza i cache dla testów |
+| Nowa instancja aplikacji dla każdego testu | Osobna baza i cache dla testów |
 | README i plan drugiej usługi | Dopisujesz decyzje o danych i cache |
 
 ## 1.1. Podstawowe pojęcia persystencji i cache
@@ -45,7 +45,7 @@ Po laboratorium powinieneś:
 
 **TTL** (*Time To Live*) to czas życia wpisu. **HIT** oznacza znalezienie go, **MISS** — brak. W naszym przykładzie **BYPASS** oznacza pominięcie niedostępnego cache.
 
-**Cache-aside** to wzorzec, w którym aplikacja najpierw sprawdza cache. Przy **HIT** zwraca znalezioną kopię. Przy **MISS** pobiera dane z bazy, zapisuje je w cache z określonym TTL i zwraca wynik. Po zatwierdzeniu zmiany w bazie usuwa odpowiadający wpis z cache, aby kolejny odczyt pobrał aktualne dane. Baza pozostaje źródłem prawdy.
+**Cache-aside** to wzorzec, w którym aplikacja najpierw sprawdza cache. Przy **HIT** zwraca znalezioną kopię. Przy **MISS** pobiera dane z bazy, zapisuje je w cache z określonym TTL i zwraca wynik. Po zatwierdzeniu zmiany w bazie usuwa odpowiadający wpis z cache, aby kolejny odczyt pobrał aktualne dane. Za aktualny stan należy uznawać dane zatwierdzone w bazie; cache zawiera ich kopię.
 
 **Przepływ cache-aside — odczyt i zmiana danych:**
 
@@ -55,7 +55,7 @@ sequenceDiagram
     actor K as Klient
     participant U as Usługa
     participant R as Redis — cache
-    participant B as Baza danych — źródło prawdy
+    participant B as Baza danych — trwały zapis
 
     rect rgb(239, 246, 255)
         Note over K,B: Odczyt — cache-aside
@@ -100,7 +100,7 @@ sequenceDiagram
 </pre>
 
 
-Baza jest źródłem prawdy, ale przy HIT aplikacja jej nie sprawdza. Błędne unieważnianie może więc dać nieaktualną odpowiedź. Cache nadaje się np. do opisu sali; o przyznaniu ostatniego miejsca nie decyduj wyłącznie na podstawie kopii.
+Przy HIT aplikacja zwraca kopię z cache bez sprawdzania aktualnych danych w bazie. Należy więc usuwać nieaktualny wpis po zmianie danych, aby uniknąć zwracania starej wartości. Cache można wykorzystać np. do opisu sali; o przyznaniu ostatniego miejsca nie należy decydować wyłącznie na podstawie kopii.
 
 ### Analiza odpowiedzialności za dane
 
@@ -645,7 +645,7 @@ Dopisz sekcje z `README-LAB2-template.md`, zachowując dokumentację LAB1:
 
 | Cecha | Pamięć procesu z LAB1 | SQLite | Redis jako cache |
 |---|---|---|---|
-| Rola | Stan procesu | Trwałe źródło prawdy | Odtwarzalna kopia |
+| Rola | Dane przechowywane w procesie | Trwały zapis danych | Kopia danych, którą można ponownie pobrać z bazy |
 | Restart Uvicorna | Zmiany znikają | Plik pozostaje | Osobny proces może zachować wpis |
 | Brak danych | Stan nieutworzony lub utracony | Brak rekordu | MISS jest normalny |
 | Trudność | Utrata zmian | Schemat, transakcje, błędy | Aktualność, TTL, awarie |

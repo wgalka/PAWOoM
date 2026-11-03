@@ -317,7 +317,7 @@ W bibliotece wywołanie `do_service()` domyślnie korzysta z nazwy hosta instanc
 
 Należy dodać `py-eureka-client==0.13.3` do istniejącego `requirements.txt` każdej usługi oraz ponownie zainstalować zależności jej środowiska. Nie należy zastępować pliku zależności LAB2 plikiem z demo.
 
-### Krok 4 — rejestracja cyklu życia aplikacji
+### Krok 4 — uruchamianie i zamykanie klienta Eureka razem z aplikacją
 
 Należy utworzyć klienta Eureka i uruchamiać go w cyklu życia FastAPI. Poniższy szkielet pokazuje wariant dla drugiej usługi, która nie ma jeszcze zasobów LAB2. Endpointy należy zarejestrować przed `return app`. Dla pierwszej usługi należy zastosować połączenie cykli życia opisane pod szkieletem.
 
@@ -444,7 +444,7 @@ Należy wykonać poniższe scenariusze, dostosowując ścieżki i identyfikatory
 | Poprawny odczyt | Obie usługi działają; wywołanie endpointu zależnego | `200` i dane właściwego zasobu |
 | Brak zasobu | Wywołanie z nieistniejącym ID przy działającej zależności | `404`, bez zatrzymania procesów |
 | Niedostępna zależność | Zatrzymanie tylko usługi wywoływanej przez Ctrl+C; ponowienie żądania | `503`; `/health` usługi wywołującej nadal daje `200` |
-| Przywrócenie zależności | Ponowne uruchomienie zatrzymanej usługi i odświeżenie rejestru klienta | Ponownie `200` z danymi |
+| Ponowne uruchomienie usługi wywoływanej | Ponowne uruchomienie zatrzymanej usługi i odświeżenie rejestru klienta | Ponownie `200` z danymi |
 
 W demo należy zatrzymać terminal `LOCKER-SERVICE`, pozostawiając Eurekę i `PARCEL-SERVICE`. Status i treść odpowiedzi należy odczytać przez `curl.exe -i http://127.0.0.1:8102/delivery-check/KRK-1024`. Dodatkowo należy sprawdzić `curl.exe -i http://127.0.0.1:8102/health`. Dla każdego scenariusza należy zapisać stan początkowy, żądanie, wynik i sposób przywrócenia środowiska.
 

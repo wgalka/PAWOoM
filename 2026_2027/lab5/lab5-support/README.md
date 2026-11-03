@@ -29,7 +29,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Testy w `demo/tests/test_async_messaging.py` korzystają z klas `InMemoryEventBroker` oraz `FakeEurekaClient`, dzięki czemu sprawdzają logikę publikacji, konsumpcji, idempotentności i obsługi błędów bez wymagania działającego kontenera RabbitMQ ani serwera Eureka (`5 passed`).
+Testy w `demo/tests/test_async_messaging.py` korzystają z klas `InMemoryEventBroker` oraz `FakeEurekaClient`, dzięki czemu sprawdzają logikę publikacji, odbierania i przetwarzania, idempotentności i obsługi błędów bez wymagania działającego kontenera RabbitMQ ani serwera Eureka (`5 passed`).
 
 ## Uruchomienie usług demonstracyjnych
 

@@ -26,7 +26,7 @@
 
 - Polecenie zbudowania i uruchomienia całego systemu jedną komendą (`docker compose up --build -d`):
 - Polecenie sprawdzenia statusu i zdrowia kontenerów (`docker compose ps`, `docker compose logs`):
-- Polecenia uruchomienia testów jednostkowych oraz testów integracyjnych przeciwko skonteneryzowanemu systemowi:
+- Polecenia uruchomienia testów jednostkowych oraz testów integracyjnych systemu uruchomionego w kontenerach:
 - Polecenia zatrzymania systemu z zachowaniem danych (`docker compose down`) oraz z pełnym wyczyszczeniem wolumenów (`docker compose down -v`):
 
 ### Wyniki weryfikacji i eksperymentów kontenerowych
@@ -36,7 +36,7 @@
 | Start całego środowiska z `compose.yaml` | `docker compose up --build -d` i sprawdzenie `docker compose ps` oraz panelu Eureki | Wszystkie kontenery działają, usługi mają status `UP` pod nazwami kontenerowymi | | |
 | Izolacja sieciowa usług za bramką | Próba wywołania usługi przez `:8080/api/...` oraz próba bezpośredniego połączenia z nieopublikowanym portem usługi z hosta | Dostęp przez bramkę działa (`200`), port wewnętrzny usługi jest niedostępny z hosta | | |
 | Pełny przepływ synchroniczny i cache (LAB1–LAB4) | Zapis i odczyt przez bramkę (`X-Gateway: lab4`, `X-Cache: MISS/HIT`, wywołanie usługa–usługa z LAB3) | Poprawne odpowiedzi HTTP i działanie cache w kontenerze Redis | | |
-| Pełny przepływ asynchroniczny (LAB5) | Publikacja zdarzenia przez bramkę i konsumpcja z kontenera RabbitMQ | Zdarzenie przetworzone idempotentnie, stan zaktualizowany, cache unieważniony | | |
+| Pełny przepływ asynchroniczny (LAB5) | Publikacja zdarzenia przez bramkę i odbieranie i przetwarzanie z kontenera RabbitMQ | Zdarzenie przetworzone idempotentnie, stan zaktualizowany, cache unieważniony | | |
 | Trwałość danych na wolumenie po odtworzeniu kontenera | Zapis danych, wykonanie `docker compose down` i ponowne `docker compose up -d`, odczyt danych przez bramkę | Rekord zapisany w SQLite na nazwanym wolumenie przetrwał usunięcie i odtworzenie kontenera | | |
 | Restart pojedynczego kontenera usługi | `docker compose restart <usluga>` i obserwacja logów oraz powrotu komunikacji przez bramkę | Kontener uruchamia się ponownie, odnawia rejestrację i przywraca obsługę tras | | |
 

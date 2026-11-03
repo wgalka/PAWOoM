@@ -1,4 +1,4 @@
-## Etap LAB4 — konfiguracja wspólnego punktu wejścia (API Gateway)
+## Etap LAB4 — konfiguracja bramki API (API Gateway)
 
 ### Autorzy i ciągłość projektu z LAB1–LAB3
 
@@ -6,7 +6,7 @@
 - Temat projektu oraz zachowane komponenty z LAB1–LAB3 (pierwsza usługa z bazą SQLite i cache Redis, druga usługa, Eureka Server):
 - Dodane i zmodyfikowane pliki w repozytorium:
 
-### Kontrakt wejściowy i granice odpowiedzialności
+### API udostępniane przez bramkę i podział odpowiedzialności
 
 | Metoda i ścieżka klienta (`:8080`) | Identyfikator trasy (`id`) | Usługa docelowa w Eurece (`uri`) | Ścieżka wewnętrzna po `StripPrefix` | Właściciel danych i uzasadnienie udostępnienia |
 |---|---|---|---|---|

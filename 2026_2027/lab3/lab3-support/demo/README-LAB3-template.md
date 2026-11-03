@@ -36,7 +36,7 @@ Nie należy zapisywać haseł ani lokalnych sekretów w repozytorium. Adresy, po
 | Odnajdywanie | Wywołanie przepływu dla znanego zasobu | `200` z danymi zależnej usługi | … | … |
 | Brak zasobu | Wywołanie nieistniejącego ID | `404` | … | … |
 | Awaria zależności | Zatrzymanie usługi wywoływanej, ponowienie żądania | `503`; health wywołującej nadal `200` | … | … |
-| Przywrócenie zależności | Restart zatrzymanej usługi, odświeżenie rejestru klienta | Ponownie `200` z danymi | … | … |
+| Ponowne uruchomienie usługi wywoływanej | Restart zatrzymanej usługi, odświeżenie rejestru klienta | Ponownie `200` z danymi | … | … |
 | Testy automatyczne | `pytest` bez Eureka Server | Testy z atrapą, w tym mapowanie `502` | … | … |
 
 Należy wskazać co najmniej cztery własne testy LAB3 oraz wynik wcześniejszych testów LAB1 i LAB2. Dla odmiennego mapowania błędów należy podać uzasadnienie wynikające z kontraktu.

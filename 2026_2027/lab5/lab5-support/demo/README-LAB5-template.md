@@ -20,10 +20,10 @@
 | Skutek biznesowy po odebraniu zdarzenia | | |
 
 - Przykładowy ładunek JSON zdarzenia domenowego (`event_id`, `event_type`, pola domenowe, `occurred_at`):
-- Dlaczego wybrana operacja korzysta z komunikacji asynchronicznej przez RabbitMQ, a które sprawdzenie pozostaje synchroniczne (HTTP przez Eurekę z LAB3)?
+- Dlaczego wybrana operacja korzysta z komunikacji asynchronicznej przez RabbitMQ, a które sprawdzenie pozostaje synchroniczne (HTTP do usługi odnalezionej w Eurece z LAB3)?
 - Kolejność operacji wobec bazy SQLite i cache Redis z LAB2 (dlaczego publikacja następuje po zatwierdzeniu transakcji w bazie i jakie ryzyko wiąże się z awarią pomiędzy commitem a publikacją):
 - Sposób zapewnienia idempotentności konsumenta przy powtórnym dostarczeniu wiadomości o tym samym `event_id`:
-- Diagram przepływu łączący API Gateway (LAB4), komunikację synchroniczną (LAB3), publikację i konsumpcję przez RabbitMQ (LAB5) oraz bazę SQLite i cache Redis (LAB2):
+- Diagram przepływu łączący API Gateway (LAB4), komunikację synchroniczną (LAB3), publikację, odbieranie i przetwarzanie wiadomości przez RabbitMQ (LAB5) oraz bazę SQLite i cache Redis (LAB2):
 
 ### Uruchomienie, konfiguracja i zatrzymanie środowiska
 
@@ -38,11 +38,11 @@
 | Scenariusz | Stan początkowy i działanie | Oczekiwany wynik | Rzeczywisty status HTTP, stan kolejki RabbitMQ i stan danych | Wniosek techniczny |
 |---|---|---|---|---|
 | Publikacja zdarzenia po poprawnym zapisie (przez API Gateway `:8080`) | | | | |
-| Konsumpcja wiadomości z kolejki, `ACK`, aktualizacja stanu i unieważnienie cache Redis | | | | |
+| Odbieranie i przetwarzanie wiadomości z kolejki, `ACK`, aktualizacja stanu i unieważnienie cache Redis | | | | |
 | Idempotentność — ponowne dostarczenie tego samego `event_id` | | | | |
 | Odrzucenie operacji przez walidację (`422`) lub regułę biznesową (`409`) — brak publikacji zdarzenia | | | | |
 | Zatrzymany konsument podczas publikacji — buforowanie w kolejce i późniejsze przetworzenie | | | | |
-| Zatrzymany broker RabbitMQ podczas próby publikacji lub konsumpcji | | | | |
+| Zatrzymany broker RabbitMQ podczas próby publikacji lub odbierania i przetwarzania | | | | |
 
 - Wykaz co najmniej czterech własnych testów automatycznych dla komunikacji asynchronicznej:
 - Zaobserwowane ograniczenia spójności ostatecznej (*eventual consistency*) w projekcie:

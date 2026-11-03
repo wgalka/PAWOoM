@@ -1,22 +1,22 @@
-# LAB4 — Konfiguracja i uruchomienie wspólnego punktu wejścia (API Gateway)
+# LAB4 — Konfiguracja i uruchomienie bramki API (API Gateway)
 
 ## Projektowanie aplikacji webowych opartych o mikrousługi
 
 - **Czas:** 120 minut zajęć; JDK 21, Maven 3.9.x oraz zależności z LAB3 należy przygotować przed zajęciami
 - **Technologia:** Spring Cloud Gateway (Server WebFlux), Eureka Server oraz dwie mikrousługi Python + FastAPI (z SQLite i Redis z LAB2 oraz klientem Eureki z LAB3)
 - **Forma:** praca indywidualna lub w parach, w dotychczasowym repozytorium projektu z LAB1–LAB3
-- **Rezultat:** działająca bramka API Gateway udostępniająca wspólny punkt wejścia dla dwóch usług odnajdywanych w Eurece po nazwie logicznej, zestaw testów integracyjnych oraz zaktualizowana dokumentacja
+- **Rezultat:** działająca bramka API Gateway przyjmująca żądania klienta i przekazująca je do dwóch usług odnajdywanych w Eurece po nazwie logicznej, zestaw testów integracyjnych oraz zaktualizowana dokumentacja
 
 ---
 
 ## 1. Cel i zakres laboratorium
 
-W tym ćwiczeniu należy zrealizować czwarty temat laboratoryjny z sylabusa: **„Konfiguracja i uruchomienie API Gateway”**, rozwijając system budowany w LAB1, LAB2 i LAB3. Do działających już komponentów — dwóch mikrousług domenowych, warstwy trwałości i cache oraz rejestru Eureka — należy dołączyć bramkę HTTP jako wspólny punkt wejścia klienta, skonfigurować jawne trasy routingu i zweryfikować zachowanie całego układu podczas poprawnej pracy oraz w sytuacjach awaryjnych.
+W tym ćwiczeniu należy zrealizować czwarty temat laboratoryjny z sylabusa: **„Konfiguracja i uruchomienie API Gateway”**, rozwijając system budowany w LAB1, LAB2 i LAB3. Do dwóch mikrousług domenowych, bazy danych, pamięci podręcznej Redis oraz rejestru Eureka należy dodać bramkę HTTP przyjmującą żądania klienta i przekazującą je do usług. Należy skonfigurować trasy w bramce i sprawdzić działanie systemu podczas poprawnej pracy oraz awarii.
 
 Po wykonaniu laboratorium należy umieć:
 
 - odróżnić odpowiedzialność API Gateway, wzorca BFF (Backend for Frontend), rejestru usług Eureka oraz mikrousług domenowych,
-- zaprojektować publiczny kontrakt wejściowy (`/api/...`) i przypisać trasy do właściwych usług bez przenoszenia logiki biznesowej do bramki,
+- zaprojektować API udostępniane klientowi przez bramkę (`/api/...`): ścieżki, metody HTTP, przesyłane dane i odpowiedzi, oraz przypisać trasy do właściwych usług bez przenoszenia logiki biznesowej do bramki,
 - skonfigurować trasy, warunki dopasowania (`predicates`), filtry przekształcające ścieżkę (`StripPrefix`) oraz nagłówki diagnostyczne (`AddResponseHeader`),
 - przekazywać żądania z bramki do usług odnajdywanych dynamicznie w rejestrze Eureka za pomocą schematu `lb://NAZWA-USŁUGI`,
 - wykazać współdziałanie wszystkich dotychczasowych warstw systemu: walidacji i reguł biznesowych (LAB1), bazy SQLite i cache Redis z nagłówkiem `X-Cache` (LAB2), wywołania usługa–usługa (LAB3) oraz routingu bramki z nagłówkiem `X-Gateway` (LAB4),
@@ -29,7 +29,7 @@ Po wykonaniu laboratorium należy umieć:
 |---|---|---|
 | EK_04 — projektowanie systemu z kilku mikrousług i skomunikowanie komponentów (brama, rejestr, mikrousługi) | Połączenie bramki API Gateway, rejestru Eureka i dwóch usług domenowych w jeden spójny przepływ komunikacyjny | Działający układ czterech procesów (plus Redis dla usługi z LAB2), diagram architektury i tabela tras |
 | EK_03 — implementacja funkcjonalności z wykorzystaniem dokumentacji | Konfiguracja tras, filtrów, klienta rejestru i limitów czasu oraz implementacja testów integracyjnych | Plik `application.yml`, przechodzące testy i opis co najmniej dwóch wykorzystanych źródeł dokumentacji |
-| EK_01 — rozumienie pojęć architektury mikrousługowej | Rozróżnienie routingu brzegowego, service discovery, komunikacji wewnętrznej i wzorca BFF | Poprawne wyjaśnienie przepływu żądania oraz granic odpowiedzialności komponentów |
+| EK_01 — rozumienie pojęć architektury mikrousługowej | Rozróżnienie kierowania żądań klienta przez bramkę, odnajdywania usług (service discovery), komunikacji wewnętrznej i wzorca BFF | Poprawne wyjaśnienie przepływu żądania oraz granic odpowiedzialności komponentów |
 | EK_02 — dobór i wykorzystanie narzędzi | Uruchomienie i integracja Spring Cloud Gateway, Eureka, FastAPI, SQLite, Redis oraz HTTPX | Powtarzalna instrukcja uruchomienia środowiska i weryfikacji przez HTTP |
 | EK_05 — analiza wyzwań, jakości i ograniczeń rozwiązania | Badanie skutków zatrzymania usługi, zatrzymania bramki, opóźnień odświeżania rejestru i błędnej transformacji ścieżki | Udokumentowane wyniki eksperymentów awarii oraz wnioski techniczne |
 
@@ -46,9 +46,9 @@ Pracę należy kontynuować we własnym temacie domenowym i w tym samym repozyto
 | **LAB1** | Pierwsza mikrousługa (`create_app()`), model Pydantic, `/health`, odczyt listy i szczegółów, zapis, walidacja (`422`), reguła biznesowa (`409`) i obsługa braku zasobu (`404`) | Endpointy domenowe pierwszej usługi stają się dostępne przez trasę bramki; walidacja i reguła biznesowa nadal są egzekwowane w usłudze, a kody `404`, `409`, `422` przechodzą przez bramkę bez zmian |
 | **LAB2** | Trwała baza SQLite (SQLAlchemy) oraz wzorzec cache-aside w Redis (`JsonCache`, `TTL`, unieważnianie po zapisie, nagłówek `X-Cache: MISS/HIT/BYPASS`) | Baza danych i Redis pozostają prywatnymi zasobami pierwszej usługi; przy odczycie przez bramkę odpowiedź zawiera zarówno nagłówek `X-Cache` z usługi, jak i `X-Gateway` z bramki, a zapis przez bramkę unieważnia klucz w cache |
 | **LAB3** | Druga usługa domenowa, rejestracja obu usług w Eureka Server (`:8761`), wywołanie HTTP usługa–usługa po nazwie logicznej (`do_service()`) i mapowanie błędów zależności (`404`, `502`, `503`) | Obie usługi nadal rejestrują się w Eurece; bramka pobiera z Eureki listę instancji obu usług, natomiast wewnętrzne wywołanie usługa–usługa z LAB3 pozostaje bezpośrednie |
-| **LAB4** | Brak wspólnego punktu wejścia — klient musiał znać porty poszczególnych usług (`8101`, `8102`) | Dodanie komponentu `gateway` (`:8080`), który przyjmuje żądania klienta pod wspólnym prefiksem `/api/...`, przekształca ścieżkę i kieruje ruch do właściwej usługi przez `lb://NAZWA-USŁUGI` |
+| **LAB4** | Brak bramki API — klient musiał znać porty poszczególnych usług (`8101`, `8102`) | Dodanie komponentu `gateway` (`:8080`), który przyjmuje żądania klienta pod wspólnym prefiksem `/api/...`, przekształca ścieżkę i kieruje ruch do właściwej usługi przez `lb://NAZWA-USŁUGI` |
 
-API Gateway jest komponentem infrastruktury brzegowej i **nie zastępuje wymaganej mikrousługi domenowej**. Zgodnie z sylabusem każda osoba realizująca projekt musi zaimplementować co najmniej dwie różne mikrousługi oraz pozostałe wymagane komponenty systemu. Podczas pracy w parze należy dokumentować indywidualny wkład autorów oraz zmieniać role osoby konfigurującej i osoby weryfikującej działanie systemu.
+API Gateway przyjmuje żądania klienta i przekazuje je do usług. Nie należy zaliczać bramki do wymaganych mikrousług domenowych. Zgodnie z sylabusem każda osoba realizująca projekt musi zaimplementować co najmniej dwie różne mikrousługi oraz pozostałe wymagane komponenty systemu. Podczas pracy w parze należy dokumentować indywidualny wkład autorów oraz zmieniać role osoby konfigurującej i osoby weryfikującej działanie systemu.
 
 ### Organizacja pracy na zajęciach i po zajęciach
 
@@ -56,7 +56,7 @@ Proponowany podział 120 minut zajęć:
 
 - **15 minut** — omówienie roli API Gateway, porównanie z Eureką i BFF oraz analiza przepływu żądania,
 - **20 minut** — uruchomienie i zbadanie wspólnego przykładu (`lab3-support` + `lab4-support`),
-- **15 minut** — zaprojektowanie tabeli tras i kontraktu wejściowego dla własnej domeny,
+- **15 minut** — zaprojektowanie tabeli tras i API udostępnianego przez bramkę dla własnej domeny,
 - **35 minut** — włączenie bramki do własnego repozytorium i konfiguracja tras do obu usług,
 - **25 minut** — weryfikacja odczytu, zapisu, cache, reguły biznesowej oraz scenariuszy awarii,
 - **10 minut** — prezentacja punktu kontrolnego i odbiór na zajęciach.
@@ -74,7 +74,7 @@ W LAB3 zewnętrzny klient HTTP musiał znać dokładny adres i port każdej mikr
 | Komponent | Główna odpowiedzialność w systemie | Czego nie należy w nim umieszczać |
 |---|---|---|
 | **Eureka Server** | Przechowywanie rejestru instancji usług (nazwa logiczna, adres IP, port, status dzierżawy) | Danych domenowych, logiki biznesowej ani pośredniczenia w przesyłaniu żądań HTTP klienta |
-| **API Gateway** | Jeden punkt wejścia dla klienta, dopasowanie trasy (`Predicate`), przekształcenie ścieżki (`Filter`), wybór instancji z rejestru (`lb://`) i przekazanie żądania HTTP | Reguł biznesowych domeny (np. sprawdzania wolnych skrytek lub nakładania się rezerwacji), tabel bazodanowych usług ani bezpośrednich połączeń z SQLite/Redis usług |
+| **API Gateway** | Przyjmowanie żądań klienta, dopasowanie trasy (`Predicate`), przekształcenie ścieżki (`Filter`), wybór instancji z rejestru (`lb://`) i przekazanie żądania HTTP | Reguł biznesowych domeny (np. sprawdzania wolnych skrytek lub nakładania się rezerwacji), tabel bazodanowych usług ani bezpośrednich połączeń z SQLite/Redis usług |
 | **BFF (Backend for Frontend)** | Odmiana warstwy pośredniej dostosowana do potrzeb konkretnego typu interfejsu (np. osobne API dla aplikacji mobilnej i osobne dla panelu webowego) | Logiki właściciela danych domenowych; w tym laboratorium należy skonfigurować jedną wspólną bramkę API Gateway, a nie osobne usługi BFF |
 | **Mikrousługa domenowa** | Realizacja logiki biznesowej w granicach własnego kontekstu (DDD), walidacja danych, trwały zapis we własnej bazie i obsługa własnego cache | Bezpośredniego dostępu do bazy danych innej usługi ani przejmowania odpowiedzialności innych kontekstów domenowych |
 
@@ -88,7 +88,7 @@ flowchart LR
     G -->|"/lockers/..."| L["Usługa 1 (Locker Service) :8101"]
     G -->|"/delivery-check/..."| P["Usługa 2 (Parcel Service) :8102"]
     P -->|"Bezpośrednie HTTP z LAB3<br/>GET /lockers/KRK-1024"| L
-    L --> DB[("SQLite (LAB2)<br/>źródło prawdy")]
+    L --> DB[("SQLite (LAB2)<br/>trwały zapis danych")]
     L <--> R[("Redis (LAB2)<br/>cache-aside")]
     G -.->|"Pobieranie rejestru (fetch-registry)"| E["Eureka Server :8761"]
     P -.->|"Rejestracja, heartbeat,<br/>pobieranie rejestru"| E
@@ -375,13 +375,13 @@ Oczekiwany wynik to `5 passed`. Testy w pliku `tests/test_gateway_demo.py` są *
 
 ---
 
-## 5. Część B — zaprojektowanie kontraktu wejściowego dla własnego projektu
+## 5. Część B — zaprojektowanie API udostępnianego przez bramkę we własnym projekcie
 
 Po przeanalizowaniu przykładu należy zatrzymać procesy demonstracyjne (`LOCKER-SERVICE`, `PARCEL-SERVICE` oraz bramkę z `lab4-support`), pozostawiając uruchomiony serwer Eureka oraz serwer Redis (wymagany przez pierwszą usługę z LAB2). Następnie należy przejść do własnego projektu rozwijanego w LAB1–LAB3.
 
-### Krok 1. Wyznaczenie tras i granic API wejściowego
+### Krok 1. Wybór endpointów udostępnianych przez bramkę i przypisanie tras
 
-Dla dwóch własnych usług z LAB3 należy zaprojektować przestrzeń ścieżek wspólnego punktu wejścia i uzupełnić poniższą tabelę w dokumentacji projektu (poniższy wiersz z `ROOM-SERVICE` jest wyłącznie przykładem formatu zapisu):
+Dla dwóch własnych usług z LAB3 należy wybrać ścieżki dostępne przez bramkę i uzupełnić poniższą tabelę w dokumentacji projektu. Wiersz z `ROOM-SERVICE` należy traktować wyłącznie jako przykład formatu zapisu:
 
 | Metoda i ścieżka zewnętrzna (w bramce `:8080`) | Identyfikator trasy (`id`) | Usługa docelowa w Eurece (`uri`) | Ścieżka wewnętrzna po `StripPrefix=1` | Rola operacji i właściciel danych |
 |---|---|---|---|---|
@@ -422,7 +422,7 @@ my-microservices-project/
 │   │   └── cache.py            # Obsługa Redis cache-aside i X-Cache (LAB2)
 │   ├── tests/                  # Testy jednostkowe i komponentowe z LAB1–LAB3
 │   └── requirements.txt
-├── service-b/                  # Druga usługa (LAB3: własny endpoint + wywołanie service-a przez Eurekę)
+├── service-b/                  # Druga usługa (LAB3: własny endpoint + wywołanie service-a odnalezionej w Eurece)
 │   ├── app/
 │   │   └── main.py
 │   ├── tests/
@@ -543,9 +543,9 @@ Należy przeprowadzić pojedynczo poniższe scenariusze awarii na własnym proje
 | `500` (Connection refused) / `504 Gateway Timeout` | API Gateway — klient HTTP (LAB4) | Wpis instancji jeszcze widnieje w kopii rejestru bramki, ale proces usługi został już zatrzymany (`500`) albo nie odpowiedział w czasie `response-timeout` (`504`) | Zależnie od momentu przerwania potoku filtrów |
 | Odmowa połączenia TCP (*Connection refused*) | Warstwa sieciowa systemu operacyjnego | Proces `API Gateway` na porcie `8080` jest wyłączony (klient nie otrzymuje żadnej odpowiedzi HTTP) | Brak odpowiedzi HTTP |
 
-### Krok 4. Implementacja testów integracyjnych wspólnego wejścia (pytest / HTTPX)
+### Krok 4. Implementacja testów integracyjnych API udostępnianego przez bramkę (pytest / HTTPX)
 
-Należy zachować wszystkie dotychczasowe testy jednostkowe i komponentowe z LAB1, LAB2 i LAB3 (uruchamiane z atrapami w izolacji od sieci) oraz utworzyć w osobnym katalogu (np. `tests/integration/test_gateway_integration.py`) zestaw **co najmniej czterech własnych testów integracyjnych** wykonywanych przeciwko uruchomionemu środowisku przez port bramki (`8080`):
+Należy zachować wszystkie dotychczasowe testy jednostkowe i komponentowe z LAB1, LAB2 i LAB3 (uruchamiane z atrapami w izolacji od sieci) oraz utworzyć w osobnym katalogu (np. `tests/integration/test_gateway_integration.py`) zestaw **co najmniej czterech własnych testów integracyjnych** wysyłających żądania do uruchomionego systemu przez port bramki (`8080`):
 
 1. **Test 1 — odczyt domenowy z pierwszej usługi przez bramkę:** sprawdzenie kodu `200`, oczekiwanych pól JSON zasobu, nagłówka `X-Gateway: lab4` oraz obecności nagłówka `X-Cache` z LAB2 (`MISS` lub `HIT`).
 2. **Test 2 — odczyt domenowy z drugiej usługi przez bramkę:** sprawdzenie kodu `200`, nagłówka `X-Gateway: lab4` oraz treści odpowiedzi potwierdzającej działanie przepływu z LAB3.
@@ -651,7 +651,7 @@ W sekcji LAB4 należy zawrzeć:
 
 ### Granice zakresu zadania na LAB4
 
-W ramach LAB4 nie należy implementować uwierzytelniania i autoryzacji użytkowników (OAuth2 / JWT), agregacji dokumentacji OpenAPI w bramce, komunikacji asynchronicznej przez brokera wiadomości, konteneryzacji bramki i usług w jednym pliku Docker Compose ani dodatkowych warstw frontendowych. Należy skupić się na poprawnym skonfigurowaniu routingu wspólnego wejścia, integracji z Eureką oraz rygorystycznej weryfikacji współdziałania z mechanizmami z LAB1–LAB3.
+W ramach LAB4 nie należy implementować uwierzytelniania i autoryzacji użytkowników (OAuth2 / JWT), agregacji dokumentacji OpenAPI w bramce, komunikacji asynchronicznej przez brokera wiadomości, konteneryzacji bramki i usług w jednym pliku Docker Compose ani dodatkowych warstw frontendowych. Należy skupić się na poprawnym skonfigurowaniu tras w bramce API, integracji z Eureką oraz rygorystycznej weryfikacji współdziałania z mechanizmami z LAB1–LAB3.
 
 ---
 
@@ -662,7 +662,7 @@ W ramach LAB4 nie należy implementować uwierzytelniania i autoryzacji użytkow
 | Punkt kontrolny | Oczekiwany dowód wykonania |
 |---|---|
 | **Punkt A — ciągłość LAB1–LAB3** | Działają obie usługi własnego projektu, baza SQLite i cache Redis pierwszej usługi, rejestracja w Eurece oraz dotychczasowe testy jednostkowe |
-| **Punkt B — projekt kontraktu wejściowego** | Uzupełniona tabela tras dla własnej domeny, uzasadnienie wyboru udostępnionych ścieżek oraz rozdzielenie odpowiedzialności komponentów |
+| **Punkt B — projekt API udostępnianego przez bramkę** | Uzupełniona tabela tras dla własnej domeny, uzasadnienie wyboru udostępnionych ścieżek oraz rozdzielenie odpowiedzialności komponentów |
 | **Punkt C — konfiguracja bramki** | Co najmniej dwie jawne trasy w `application.yml` kierujące ruch przez `lb://NAZWA-USŁUGI` do dwóch różnych usług, z poprawnym `StripPrefix` i nagłówkiem diagnostycznym |
 | **Punkt D — spójność operacji API** | Przez port bramki (`8080`) działają: odczyt z pierwszej usługi (z widocznymi nagłówkami `X-Gateway` i `X-Cache`), zapis/modyfikacja unieważniająca cache, odczyt z drugiej usługi (wykonujący wewnętrznie wywołanie z LAB3) oraz kody błędów `404`, `409`, `422` |
 | **Punkt E — analiza awarii** | Przeprowadzone i udokumentowane scenariusze zatrzymania każdej z usług, ponownego uruchomienia usługi oraz zatrzymania bramki |
@@ -687,11 +687,11 @@ Punktacja etapu zachowuje proporcję z sylabusa przedmiotu: **60 punktów za kod
 
 | Obszar | Oceniany element | Maksimum |
 |---|---|---:|
-| **Kod** | Zachowanie pełnej funkcjonalności usług i mechanizmów z LAB1–LAB3 (baza SQLite, cache Redis, rejestracja i wywołanie przez Eurekę) | 10 |
+| **Kod** | Zachowanie pełnej funkcjonalności usług i mechanizmów z LAB1–LAB3 (baza SQLite, cache Redis, rejestracja i wywołanie usługi odnalezionej w Eurece) | 10 |
 | **Kod** | Poprawna konfiguracja co najmniej dwóch jawnych tras w Spring Cloud Gateway przez `lb://`, warunki `Path`, `StripPrefix`, nagłówek `X-Gateway` i limity czasu | 20 |
 | **Kod** | Poprawne przekazywanie przez bramkę odczytu z obu usług, operacji zapisu (z unieważnieniem cache z LAB2) oraz błędów domenowych i walidacji (`404`, `409`, `422`) | 15 |
 | **Kod** | Co najmniej cztery własne, powtarzalne testy integracyjne przechodzące przez bramkę oraz utrzymanie wcześniejszych testów jednostkowych | 15 |
-| **Dokumentacja** | Projekt kontraktu wejściowego, tabela tras, diagram architektury z uwzględnieniem zasobów LAB2–LAB4 oraz granice odpowiedzialności | 10 |
+| **Dokumentacja** | Projekt API udostępnianego przez bramkę, tabela tras, diagram architektury z uwzględnieniem zasobów LAB2–LAB4 oraz granice odpowiedzialności | 10 |
 | **Dokumentacja** | Powtarzalna instrukcja uruchomienia i zatrzymania wszystkich procesów, opis zmiennych środowiskowych, portów i przygotowania danych testowych | 10 |
 | **Dokumentacja** | Udokumentowane wyniki sześciu scenariuszy awarii, porównanie źródeł błędów HTTP oraz opis ograniczeń rozwiązania | 10 |
 | **Dokumentacja** | Opis co najmniej dwóch wykorzystanych źródeł dokumentacji technicznej (EK_03), wkład autorów i informacja o weryfikacji AI | 10 |
@@ -719,7 +719,7 @@ Przykładowa sekwencja poleceń w terminalu PowerShell:
 git status
 git add .
 git diff --cached --stat
-git commit -m "feat(lab4): konfiguracja wspólnego punktu wejścia API Gateway i testy integracyjne"
+git commit -m "feat(lab4): konfiguracja bramki API Gateway i testy integracyjne"
 git tag lab4
 git push origin HEAD
 git push origin refs/tags/lab4
@@ -739,4 +739,4 @@ Podczas realizacji zadania należy wykorzystać co najmniej dwa źródła z ofic
 - [StripPrefix GatewayFilter Factory](https://docs.spring.io/spring-cloud-gateway/reference/spring-cloud-gateway-server-webflux/gatewayfilter-factories/stripprefix-factory.html) — usuwanie wskazanej liczby początkowych segmentów ścieżki przed przekazaniem żądania do usługi.
 - [ReactiveLoadBalancerClientFilter](https://docs.spring.io/spring-cloud-gateway/reference/spring-cloud-gateway-server-webflux/global-filters.html) — działanie schematu `lb://NAZWA-USŁUGI` oraz zachowanie bramki przy braku dostępnych instancji w rejestrze (`503`).
 - [Spring Cloud Netflix — Eureka Client](https://docs.spring.io/spring-cloud-netflix/reference/spring-cloud-netflix.html) — konfiguracja pobierania rejestru (`fetch-registry`), wyłączenia własnej rejestracji (`register-with-eureka`) oraz adresu `defaultZone`.
-- [HTTPX — QuickStart & Client](https://www.python-httpx.org/quickstart/) — wykonywanie żądań HTTP, przekazywanie ładunków JSON oraz weryfikacja kodów statusu i nagłówków w testach integracyjnych.
+- [HTTPX — QuickStart & Client](https://www.python-httpx.org/quickstart/) — wykonywanie żądań HTTP, przesyłanie danych JSON oraz weryfikacja kodów statusu i nagłówków w testach integracyjnych.

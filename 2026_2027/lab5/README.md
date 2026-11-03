@@ -11,7 +11,7 @@
 
 ## 1. Cel i zakres laboratorium
 
-W tym ćwiczeniu należy zrealizować piąty temat laboratoryjny z sylabusa: **„Komunikacja pomiędzy mikrousługami — wykorzystanie brokera wiadomości RabbitMQ”**, rozwijając system budowany w LAB1, LAB2, LAB3 i LAB4. Do działającego środowiska składającego się z bramki API Gateway, rejestru Eureka oraz dwóch mikrousług (z bazą SQLite i cache Redis) należy dodać broker wiadomości RabbitMQ, zaimplementować publikację oraz konsumpcję zdarzenia domenowego i zbadać zachowanie systemu w warunkach spójności ostatecznej (*eventual consistency*) oraz awarii komponentów.
+W tym ćwiczeniu należy zrealizować piąty temat laboratoryjny z sylabusa: **„Komunikacja pomiędzy mikrousługami — wykorzystanie brokera wiadomości RabbitMQ”**, rozwijając system budowany w LAB1, LAB2, LAB3 i LAB4. Do działającego środowiska składającego się z bramki API Gateway, rejestru Eureka oraz dwóch mikrousług (z bazą SQLite i cache Redis) należy dodać broker wiadomości RabbitMQ, zaimplementować publikację oraz odbieranie i przetwarzanie zdarzenia domenowego i zbadać zachowanie systemu w warunkach spójności ostatecznej (*eventual consistency*) oraz awarii komponentów.
 
 Po wykonaniu laboratorium należy umieć:
 
@@ -20,7 +20,7 @@ Po wykonaniu laboratorium należy umieć:
 - powiązać transakcję bazodanową (z LAB2) z publikacją zdarzenia oraz odróżnić choreografię od orkiestracji w ramach wzorca Saga,
 - opublikować trwałe zdarzenie domenowe w formacie JSON po pomyślnym przejściu walidacji i reguły biznesowej (z LAB1),
 - odebrać wiadomość z kolejki RabbitMQ z jawnym potwierdzeniem (`basic_ack`), zaktualizować stan w bazie danych i unieważnić wpis w cache Redis (z LAB2),
-- zapewnić idempotentność konsumenta po identyfikatorze `event_id` na wypadek ponownego dostarczenia wiadomości (*at-least-once delivery*) oraz stosować prawo Postela przy odczycie ładunku zdarzenia,
+- zapewnić idempotentność konsumenta po identyfikatorze `event_id` na wypadek ponownego dostarczenia wiadomości (*at-least-once delivery*) oraz stosować prawo Postela przy odczycie danych wiadomości opisującej zdarzenie,
 - wykazać eksperymentalnie różnicę między zatrzymaniem usługi wywoływanej synchronicznie (`503` w LAB3) a zatrzymaniem konsumenta wiadomości (buforowanie zdarzenia w kolejce RabbitMQ i przetworzenie po powrocie usługi),
 - przetestować komunikację asynchroniczną za pomocą izolowanych testów jednostkowych oraz testów integracyjnych przez API Gateway.
 
@@ -28,7 +28,7 @@ Po wykonaniu laboratorium należy umieć:
 
 | Efekt | Ćwiczone działanie na LAB5 | Dowód wykonania |
 |---|---|---|
-| EK_04 — projektowanie systemu z kilku mikrousług i skomunikowanie komponentów | Połączenie komunikacji synchronicznej (API Gateway, Eureka) oraz asynchronicznej (RabbitMQ) pomiędzy dwiema usługami | Działający przepływ publikacji i konsumpcji zdarzenia wyzwalany przez API Gateway, diagram i tabela kontraktu zdarzenia |
+| EK_04 — projektowanie systemu z kilku mikrousług i skomunikowanie komponentów | Połączenie komunikacji synchronicznej (API Gateway, Eureka) oraz asynchronicznej (RabbitMQ) pomiędzy dwiema usługami | Działający przepływ publikacji, odbierania i przetwarzania zdarzenia wyzwalany przez API Gateway, diagram i tabela kontraktu zdarzenia |
 | EK_03 — implementacja funkcjonalności z wykorzystaniem dokumentacji | Konfiguracja wymiennika, kolejki, publikacji i potwierdzeń `ACK`/`NACK` w `pika` na podstawie oficjalnej dokumentacji | Działający kod producenta i konsumenta, przechodzące testy automatyczne oraz opis dwóch źródeł dokumentacji |
 | EK_01 — rozumienie pojęć architektury mikrousługowej | Rozróżnienie komunikacji synchronicznej i asynchronicznej, choreografii i orkiestracji (Saga), spójności ostatecznej i idempotentności | Poprawne wyjaśnienie decyzji architektonicznych oraz odpowiedzi podczas odbioru |
 | EK_02 — dobór i wykorzystanie narzędzi | Użycie RabbitMQ Server i panelu Management, biblioteki `pika`, FastAPI, SQLite, Redis, Eureki i Spring Cloud Gateway | Powtarzalna konfiguracja uruchomieniowa i weryfikacja stanu kolejek |
@@ -47,7 +47,7 @@ Pracę należy kontynuować w dotychczasowym repozytorium Git i w tej samej dome
 | **LAB1** | Pierwsza mikrousługa (`create_app()`), modele Pydantic, walidacja (`422`), reguła biznesowa (`409`), obsługa braku zasobu (`404`) | Walidacja i reguła biznesowa nadal chronią wejście: odrzucona operacja (`409` lub `422`) nie może opublikować zdarzenia do brokera RabbitMQ |
 | **LAB2** | Baza danych SQLite (SQLAlchemy) oraz cache-aside w Redis (`JsonCache`, `TTL`, nagłówek `X-Cache`, unieważnianie po zapisie) | W usłudze producenta zdarzenie jest publikowane dopiero po zatwierdzeniu zapisu; w usłudze konsumenta odebranie zdarzenia zapisuje zmianę w bazie i unieważnia odpowiedni klucz w Redis |
 | **LAB3** | Druga mikrousługa, rejestracja obu usług w Eureka Server (`:8761`), synchroniczne wywołanie HTTP `do_service()` po nazwie logicznej | Komunikacja synchroniczna zostaje zachowana tam, gdzie wymagana jest natychmiastowa odpowiedź przed podjęciem decyzji, natomiast powiadomienie o zrealizowanym fakcie domenowym przechodzi asynchronicznie przez RabbitMQ |
-| **LAB4** | Wspólny punkt wejścia API Gateway (`:8080`), trasy `lb://NAZWA-USŁUGI`, `StripPrefix=1`, nagłówek `X-Gateway: lab4` | Klient zewnętrzny nadal wysyła żądania przez bramkę (`:8080/api/...`); bramka przekazuje żądanie HTTP do producenta i zwraca odpowiedź bez oczekiwania na asynchronicznego konsumenta |
+| **LAB4** | Bramka API Gateway (`:8080`), trasy `lb://NAZWA-USŁUGI`, `StripPrefix=1`, nagłówek `X-Gateway: lab4` | Klient zewnętrzny nadal wysyła żądania przez bramkę (`:8080/api/...`); bramka przekazuje żądanie HTTP do producenta i zwraca odpowiedź bez oczekiwania na asynchronicznego konsumenta |
 | **LAB5** | Wyłącznie synchroniczna komunikacja HTTP między usługami | Włączenie brokera **RabbitMQ** (`:5672` / `:15672`): jedna z usług publikuje trwałe zdarzenie domenowe po zapisie, a druga odbiera je z kolejki, przetwarza idempotentnie i potwierdza przez `ACK` |
 
 Podczas pracy w parze należy podzielić zadania pomiędzy implementację strony publikującej (producenta i integracji z bazą/regułą) oraz strony odbierającej (konsumenta, idempotentności i unieważnienia cache), a następnie zamienić się rolami podczas pisania testów i wykonywania eksperymentów awarii.
@@ -59,7 +59,7 @@ Proponowany podział 120 minut zajęć:
 - **15 minut** — omówienie modelu AMQP (Exchange, Routing Key, Queue, ACK), porównanie z HTTP oraz omówienie choreografii/Sagi i idempotentności,
 - **20 minut** — uruchomienie przykładu wspólnego z RabbitMQ (`lab5-support`) i obserwacja kolejki w panelu `15672`,
 - **15 minut** — zaprojektowanie kontraktu zdarzenia domenowego i przepływu asynchronicznego we własnym projekcie,
-- **35 minut** — implementacja publikacji i konsumpcji zdarzenia w dwóch usługach własnego projektu,
+- **35 minut** — implementacja publikacji, odbierania i przetwarzania zdarzenia w dwóch usługach własnego projektu,
 - **25 minut** — weryfikacja przez API Gateway, eksperyment z zatrzymanym konsumentem i duplikatem wiadomości,
 - **10 minut** — prezentacja punktu kontrolnego i odbiór na zajęciach.
 
@@ -202,7 +202,7 @@ Należy otworzyć i przeanalizować trzy kluczowe fragmenty kodu w pakiecie `lab
    ```
    Metoda deklaruje trwały wymiennik typu `topic` (`pawoom.events`) i publikuje wiadomość JSON oznaczoną jako trwała (`Persistent`).
 
-2. **Konsumpcja z jawnym potwierdzeniem `ACK`/`NACK` w `demo/shared/messaging.py` (`RabbitEventBroker.consume_available`):**
+2. **Odbieranie i przetwarzanie wiadomości z jawnym potwierdzeniem `ACK`/`NACK` w `demo/shared/messaging.py` (`RabbitEventBroker.consume_available`):**
    ```python
    method_frame, _properties, body = channel.basic_get(
        queue=queue_name, auto_ack=False
@@ -264,7 +264,7 @@ Należy upewnić się, że działa serwer **Eureka** (`:8761`, uruchomiony z `la
    .\.venv\Scripts\python.exe -m uvicorn demo.parcel_service.app.main:app --port 8102
    ```
 
-3. **Terminal 3 — nadanie paczki i obserwacja stanu przed oraz po konsumpcji:**
+3. **Terminal 3 — nadanie paczki i obserwacja stanu przed przetworzeniem wiadomości i po jej przetworzeniu:**
    Po pojawieniu się obu usług jako `UP` w panelu Eureki (`http://127.0.0.1:8761/`), należy wykonać:
    ```powershell
    curl.exe -i -X POST http://127.0.0.1:8102/parcels -H "Content-Type: application/json" -d "{\"id\":\"PCK-101\",\"locker_id\":\"KRK-1024\",\"size\":\"M\"}"
@@ -273,7 +273,7 @@ Należy upewnić się, że działa serwer **Eureka** (`:8761`, uruchomiony z `la
    Należy zwrócić uwagę na rezultat:
    - `POST /parcels` natychmiast zwraca `201 Created` z identyfikatorem wygenerowanego zdarzenia `last_event_id`,
    - w panelu RabbitMQ (`http://127.0.0.1:15672/#/queues`) w kolejce `locker.parcel-events` widoczna jest **1 oczekująca wiadomość (`Ready: 1`)**,
-   - odczyt `GET /lockers/KRK-1024` przed uruchomieniem konsumpcji pokazuje jeszcze `placed_parcels_count: 0` (ilustracja opóźnienia w modelu *eventual consistency*).
+   - odczyt `GET /lockers/KRK-1024` przed uruchomieniem odbierania i przetwarzania wiadomości pokazuje jeszcze `placed_parcels_count: 0` (ilustracja opóźnienia w modelu *eventual consistency*).
 
 4. **Pobranie i przetworzenie wiadomości przez konsumenta:**
    W tym samym terminalu należy wyzwolić pobranie wiadomości z kolejki i ponownie odczytać stan paczkomatu:
@@ -317,7 +317,7 @@ Należy uzupełnić tabelę projektową dla własnej domeny:
 | **Wymiennik (`exchange`) i typ** | np. `pawoom.events` (`topic`, `durable=True`) |
 | **Klucz routingu (`routing_key`)** | np. `reservation.created` |
 | **Nazwa kolejki (`queue_name`)** | np. `room.reservation-events` (`durable=True`) |
-| **Pola ładunku JSON zdarzenia** | `event_id`, `event_type`, identyfikatory zasobów, istotne dane domenowe, `occurred_at` |
+| **Pola wiadomości JSON opisującej zdarzenie** | `event_id`, `event_type`, identyfikatory zasobów, istotne dane domenowe, `occurred_at` |
 | **Skutek w usłudze konsumenta (SQLite + Redis)** | np. aktualizacja pola/tabeli w SQLite, zapis `event_id` dla idempotentności oraz wywołanie `cache.delete(id)` w Redis |
 
 Przed przystąpieniem do implementacji należy odpowiedzieć pisemnie na pięć pytań projektowych:
@@ -352,7 +352,7 @@ W funkcji `create_app(...)` obu usług należy dodać opcjonalny parametr `event
 
 W wybranym endpointzie zapisu usługi pełniącej rolę producenta należy:
 
-1. wykonać dotychczasową walidację danych (`422`), sprawdzenie reguły biznesowej (`409`) oraz ewentualne synchroniczne sprawdzenie w drugiej usłudze przez Eurekę (`do_service()` z LAB3),
+1. wykonać dotychczasową walidację danych (`422`), sprawdzenie reguły biznesowej (`409`) oraz ewentualne synchroniczne sprawdzenie w drugiej usłudze odnalezionej w Eurece (`do_service()` z LAB3),
 2. zapisać stan domenowy (w bazie SQLite, jeśli producent posiada warstwę z LAB2, oraz unieważnić jego własny cache),
 3. utworzyć słownik zdarzenia zawierający unikatowe `event_id` (np. `f"evt-{uuid.uuid4().hex[:12]}"`), `event_type`, identyfikatory zasobów oraz znacznik czasu `occurred_at` w formacie ISO 8601 UTC,
 4. wywołać `request.app.state.event_broker.publish(ROUTING_KEY, event)` i obsłużyć ewentualny wyjątek `BrokerUnavailableError` kontrolowanym kodem `503 Service Unavailable`.
@@ -375,7 +375,7 @@ except BrokerUnavailableError as exc:
     ) from exc
 ```
 
-### Krok 3. Konsumpcja wiadomości, idempotentność oraz integracja z bazą SQLite i cache Redis (LAB2)
+### Krok 3. Odbieranie i przetwarzanie wiadomości, idempotentność oraz integracja z bazą SQLite i cache Redis (LAB2)
 
 W usłudze pełniącej rolę konsumenta (rekomendowane jest, aby była to pierwsza usługa posiadająca bazę SQLite i cache Redis z LAB2, albo druga usługa zapisująca odebrane zdarzenia) należy zaimplementować:
 
@@ -386,7 +386,7 @@ W usłudze pełniącej rolę konsumenta (rekomendowane jest, aby była to pierws
    - **unieważnia klucz zmienionego zasobu w cache Redis** (`cache.delete(resource_id)` z LAB2), aby kolejny odczyt `GET` pobrał zaktualizowany stan z bazy SQLite, a nie przestarzałą kopię z Redis!
 2. **Endpoint wyzwalający pobranie oczekujących wiadomości z kolejki** (np. `POST /events/consume` oraz udostępnienie go przez trasę w bramce API Gateway z LAB4 lub pod ścieżką zasobu, np. `POST /rooms/consume-events` → przez bramkę `POST /api/rooms/consume-events`), który wywołuje `broker.consume_available(QUEUE_NAME, handle_event)` i zwraca liczbę pobranych wiadomości oraz liczbę unikatowych przetworzonych zdarzeń.
 
-Przykład połączenia konsumpcji wiadomości z repozytorium SQLAlchemy i cache Redis z LAB2:
+Przykład połączenia odbierania i przetwarzania wiadomości z repozytorium SQLAlchemy i cache Redis z LAB2:
 
 ```python
 def handle_reservation_created(event: dict[str, Any]) -> None:
@@ -411,8 +411,8 @@ Przy uruchomionych wszystkich procesach (RabbitMQ, Redis, Eureka Server, obie us
    Należy dwukrotnie odczytać zasób przez bramkę (`GET http://127.0.0.1:8080/api/<zasob-1>/<id>`), potwierdzając nagłówki `X-Gateway: lab4` oraz przejście `X-Cache: MISS` → `X-Cache: HIT`.
 2. **Wyzwolenie operacji w usłudze producenta przez bramkę (LAB1 + LAB3 + LAB4 + LAB5):**
    Należy wywołać przez bramkę operację zapisu publikującą zdarzenie (`POST http://127.0.0.1:8080/api/<zasob-2>`), a następnie sprawdzić w panelu RabbitMQ (`http://127.0.0.1:15672/#/queues`), że wiadomość pojawiła się w kolejce konsumenta (`Ready: 1`).
-3. **Konsumpcja wiadomości i weryfikacja unieważnienia cache (LAB2 + LAB4 + LAB5):**
-   Należy wywołać konsumpcję wiadomości (`POST .../consume`), a następnie ponownie odczytać zasób pierwszej usługi przez bramkę (`GET http://127.0.0.1:8080/api/<zasob-1>/<id>`). Należy potwierdzić, że:
+3. **Odbieranie i przetwarzanie wiadomości i weryfikacja unieważnienia cache (LAB2 + LAB4 + LAB5):**
+   Należy uruchomić odbieranie i przetwarzanie wiadomości (`POST .../consume`), a następnie ponownie odczytać zasób pierwszej usługi przez bramkę (`GET http://127.0.0.1:8080/api/<zasob-1>/<id>`). Należy potwierdzić, że:
    - odpowiedź zawiera zaktualizowany stan po przetworzeniu zdarzenia,
    - nagłówek `X-Cache` ma wartość `MISS` (dowód, że konsument unieważnił klucz w Redis po zapisie do SQLite!), a przy kolejnym odczycie zmienia się na `HIT`.
 
@@ -422,16 +422,16 @@ Należy wykonać pojedynczo poniższe eksperymenty i udokumentować ich przebieg
 
 | Scenariusz eksperymentalny | Działanie do wykonania | Oczekiwane zachowanie i wniosek |
 |---|---|---|
-| **1. Buforowanie wiadomości przy wyłączonym konsumencie** | Opublikowanie zdarzenia (lub zatrzymanie konsumenta po sprawdzeniu synchronicznym / bezpośrednia publikacja do kolejki, gdy proces konsumenta jest zatrzymany `Ctrl+C`) | Wiadomość nie zostaje utracona — w panelu RabbitMQ `15672` widnieje w kolejce jako `Ready: 1`. Po ponownym uruchomieniu procesu konsumenta i wywołaniu konsumpcji zdarzenie zostaje przetworzone i zatwierdzone przez `ACK` (`Ready: 0`) |
+| **1. Buforowanie wiadomości przy wyłączonym konsumencie** | Opublikowanie zdarzenia (lub zatrzymanie konsumenta po sprawdzeniu synchronicznym / bezpośrednia publikacja do kolejki, gdy proces konsumenta jest zatrzymany `Ctrl+C`) | Wiadomość nie zostaje utracona — w panelu RabbitMQ `15672` widnieje w kolejce jako `Ready: 1`. Po ponownym uruchomieniu procesu konsumenta i uruchomieniu odbierania i przetwarzania wiadomości zdarzenie zostaje przetworzone i zatwierdzone przez `ACK` (`Ready: 0`) |
 | **2. Idempotentność przy duplikacie wiadomości** | Dwukrotne opublikowanie w panelu RabbitMQ Management (sekcja *Publish message* na kolejce lub przez skrypt/test) wiadomości JSON z identycznym `event_id` | Konsument pobiera obie wiadomości (`consumed_messages: 2`), ale skutek domenowy w bazie SQLite jest aplikowany tylko **jeden raz** (`unique_events_processed` zwiększa się o 1) |
 | **3. Odrzucenie operacji przez walidację (`422`) lub regułę biznesową (`409`)** | Wysłanie przez bramkę niepoprawnych lub konfliktowych danych do producenta | Producent zwraca `422` lub `409`; w kolejce RabbitMQ nie pojawia się żadna nowa wiadomość |
-| **4. Niedostępność brokera RabbitMQ** | Zatrzymanie kontenera RabbitMQ (`docker compose stop rabbitmq`) i próba wywołania publikacji oraz konsumpcji | Obie operacje zwracają kontrolowany kod `503 Service Unavailable` bez nieobsłużonego wyjątku i bez pozostawienia niespójnego stanu. Po `docker compose start rabbitmq` komunikacja wraca do działania |
+| **4. Niedostępność brokera RabbitMQ** | Zatrzymanie kontenera RabbitMQ (`docker compose stop rabbitmq`) i próba wywołania publikacji oraz odbierania i przetwarzania | Obie operacje zwracają kontrolowany kod `503 Service Unavailable` bez nieobsłużonego wyjątku i bez pozostawienia niespójnego stanu. Po `docker compose start rabbitmq` komunikacja wraca do działania |
 
 ### Krok 6. Implementacja testów automatycznych (pytest)
 
 Należy zachować wszystkie dotychczasowe testy z LAB1–LAB4 oraz dodać **co najmniej cztery własne testy automatyczne** weryfikujące komunikację asynchroniczną:
 
-1. **Test 1 — publikacja i konsumpcja zdarzenia domenowego:** wykonanie poprawnej operacji w usłudze producenta, potwierdzenie opublikowania zdarzenia z właściwym `routing_key` i polami JSON, a następnie uruchomienie konsumpcji w drugiej usłudze i potwierdzenie zmiany stanu domenowego (oraz unieważnienia cache Redis, jeśli konsument korzysta z cache z LAB2).
+1. **Test 1 — publikacja, odbieranie i przetwarzanie zdarzenia domenowego:** wykonanie poprawnej operacji w usłudze producenta, potwierdzenie opublikowania zdarzenia z właściwym `routing_key` i polami JSON, a następnie uruchomienie odbierania i przetwarzania wiadomości w drugiej usłudze i potwierdzenie zmiany stanu domenowego (oraz unieważnienia cache Redis, jeśli konsument korzysta z cache z LAB2).
 2. **Test 2 — idempotentność konsumenta dla zduplikowanego `event_id`:** dwukrotne dostarczenie tego samego zdarzenia (z tym samym `event_id`) do kolejki i potwierdzenie, że stan domenowy zmienił się dokładnie raz.
 3. **Test 3 — brak publikacji zdarzenia przy błędzie walidacji (`422`), konflikcie (`409`) lub braku zasobu (`404`):** wywołanie niepoprawnej operacji w usłudze producenta i potwierdzenie, że lista opublikowanych zdarzeń w brokerze pozostaje pusta (`broker.published == []`).
 4. **Test 4 — kontrolowana obsługa awarii brokera (`503`):** wstrzyknięcie `InMemoryEventBroker(down=True)` i potwierdzenie, że usługa zwraca kontrolowany kod `503` bez uszkodzenia stanu danych.
@@ -452,7 +452,7 @@ W testach jednostkowych należy używać wstrzykiwanego `InMemoryEventBroker` (a
 
 ### Granice zakresu zadania na LAB5
 
-W ramach LAB5 nie należy budować klastrowego środowiska RabbitMQ, orkiestratora Sagi opartego o osobną bazę stanów maszyn stanowych, brokera Kafka ani pełnego wdrożenia wszystkich usług Python i Java w jednym wspólnym pliku Docker Compose. Należy skupić się na rzetelnej implementacji publikacji i konsumpcji zdarzenia przez RabbitMQ pomiędzy istniejącymi usługami projektu.
+W ramach LAB5 nie należy budować klastrowego środowiska RabbitMQ, orkiestratora Sagi opartego o osobną bazę stanów maszyn stanowych, brokera Kafka ani pełnego wdrożenia wszystkich usług Python i Java w jednym wspólnym pliku Docker Compose. Należy skupić się na rzetelnej implementacji publikacji, odbierania i przetwarzania zdarzenia przez RabbitMQ pomiędzy istniejącymi usługami projektu.
 
 ---
 
@@ -465,7 +465,7 @@ W ramach LAB5 nie należy budować klastrowego środowiska RabbitMQ, orkiestrato
 | **Punkt A — ciągłość LAB1–LAB4** | Działają obie usługi, baza SQLite i cache Redis (LAB2), rejestracja i odnajdywanie w Eurece (LAB3), trasy w API Gateway (LAB4) oraz wcześniejsze testy |
 | **Punkt B — kontrakt zdarzenia** | Zdefiniowany typ zdarzenia, wymiennik, klucz routingu, kolejka oraz struktura JSON z `event_id` i `occurred_at` |
 | **Punkt C — publikacja i kolejka** | Wywołanie operacji przez API Gateway (`:8080`) publikuje trwałą wiadomość widoczną w kolejce w panelu RabbitMQ (`15672`), natomiast odrzucona operacja (`409`/`422`) nie publikuje wiadomości |
-| **Punkt D — konsumpcja, baza i cache** | Konsument pobiera wiadomość, potwierdza ją przez `ACK`, aktualizuje stan w bazie danych, unieważnia wpis w cache Redis i zachowuje idempotentność dla powtórzonego `event_id` |
+| **Punkt D — odbieranie i przetwarzanie, baza i cache** | Konsument pobiera wiadomość, potwierdza ją przez `ACK`, aktualizuje stan w bazie danych, unieważnia wpis w cache Redis i zachowuje idempotentność dla powtórzonego `event_id` |
 | **Punkt E — awarie i buforowanie** | Udokumentowany eksperyment z zatrzymanym konsumentem (wiadomość czeka w kolejce i zostaje przetworzona po wznowieniu procesu) oraz z zatrzymanym brokerem RabbitMQ (`503`) |
 | **Punkt F — testy automatyczne** | Przechodzą co najmniej cztery własne testy automatyczne dla przepływu asynchronicznego oraz wszystkie wcześniejsze testy projektu |
 
@@ -473,7 +473,7 @@ W ramach LAB5 nie należy budować klastrowego środowiska RabbitMQ, orkiestrato
 
 Każda osoba powinna umieć samodzielnie wyjaśnić:
 
-1. Czym różni się wywołanie synchroniczne HTTP przez Eurekę (z LAB3) od publikacji zdarzenia przez RabbitMQ (z LAB5) i kiedy należy wybrać każde z nich?
+1. Czym różni się wywołanie synchroniczne HTTP do usługi odnalezionej w Eurece (z LAB3) od publikacji zdarzenia przez RabbitMQ (z LAB5) i kiedy należy wybrać każde z nich?
 2. Jaka jest rola `Exchange`, `Routing Key`, `Binding` oraz `Queue` i dlaczego producent nie wpisuje nazwy kolejki odbiorcy w `basic_publish`?
 3. Dlaczego należy stosować `auto_ack=False` i jawne `basic_ack` po przetworzeniu zdarzenia zamiast automatycznego potwierdzania w chwili pobrania wiadomości?
 4. Dlaczego konsument wiadomości musi być idempotentny i jak w projekcie zabezpieczono się przed dwukrotnym przetworzeniem tego samego `event_id`?
@@ -488,8 +488,8 @@ Punktacja zachowuje podział z sylabusa przedmiotu: **60 punktów za kod** oraz 
 |---|---|---:|
 | **Kod** | Zachowanie działania mechanizmów z LAB1–LAB4 (baza SQLite, cache Redis, Eureka, API Gateway i wcześniejsze testy) | 10 |
 | **Kod** | Poprawna deklaracja wymiennika i kolejki oraz publikacja trwałego zdarzenia domenowego po walidacji i zapisie | 15 |
-| **Kod** | Konsumpcja wiadomości z jawnym `ACK`/`NACK`, idempotentność po `event_id`, aktualizacja stanu i unieważnienie cache Redis | 20 |
-| **Kod** | Co najmniej cztery własne testy automatyczne weryfikujące publikację, konsumpcję, idempotentność i błędy brokera | 15 |
+| **Kod** | Odbieranie i przetwarzanie wiadomości z jawnym `ACK`/`NACK`, idempotentność po `event_id`, aktualizacja stanu i unieważnienie cache Redis | 20 |
+| **Kod** | Co najmniej cztery własne testy automatyczne weryfikujące publikację, odbieranie i przetwarzanie, idempotentność i błędy brokera | 15 |
 | **Dokumentacja** | Projekt kontraktu zdarzenia, diagram łączący LAB2–LAB5, uzasadnienie komunikacji synchronicznej vs asynchronicznej i opis Sagi | 10 |
 | **Dokumentacja** | Powtarzalna instrukcja uruchomienia RabbitMQ, usług, Eureki i API Gateway oraz komendy weryfikacji i testów | 10 |
 | **Dokumentacja** | Udokumentowane wyniki eksperymentów (buforowanie przy wyłączonym konsumencie, duplikat `event_id`, awaria brokera) i ograniczenia | 10 |

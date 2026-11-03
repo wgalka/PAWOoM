@@ -11,7 +11,7 @@
 
 ## 1. Cel i zakres laboratorium
 
-W tym ćwiczeniu należy zrealizować szósty, ostatni temat laboratoryjny z sylabusa: **„Konteneryzacja mikrousług przy użyciu silnika Docker”**, domykając architekturę systemu budowanego etapami w LAB1–LAB5. Dotychczas usługi Pythona oraz bramka API Gateway były uruchamiane ręcznie jako osobne procesy systemu gospodarza (*host OS*) w wielu oknach terminala. W ramach tego laboratorium należy przygotować pliki `Dockerfile` oraz plik `compose.yaml`, przenieść cały system do wspólnej sieci kontenerowej, skonfigurować trwały wolumen dla bazy danych oraz zweryfikować działanie wszystkich przepływów synchronicznych i asynchronicznych wyłącznie przez punkt wejścia bramki API Gateway.
+W tym ćwiczeniu należy zrealizować szósty, ostatni temat laboratoryjny z sylabusa: **„Konteneryzacja mikrousług przy użyciu silnika Docker”**, domykając architekturę systemu budowanego etapami w LAB1–LAB5. Dotychczas usługi Pythona oraz bramka API Gateway były uruchamiane ręcznie jako osobne procesy systemu gospodarza (*host OS*) w wielu oknach terminala. W ramach tego laboratorium należy przygotować pliki `Dockerfile` oraz plik `compose.yaml`, przenieść cały system do wspólnej sieci kontenerowej, skonfigurować trwały wolumen dla bazy danych oraz zweryfikować działanie wszystkich przepływów synchronicznych i asynchronicznych wyłącznie przez bramkę API Gateway.
 
 Po wykonaniu laboratorium należy umieć:
 
@@ -38,17 +38,17 @@ Po wykonaniu laboratorium należy umieć:
 
 ## 2. Zachowanie ciągłości projektu i finalizacja architektury z LAB1–LAB6
 
-Pracę należy kontynuować w tym samym repozytorium Git. Nie należy zmieniać logiki domenowej, reguł biznesowych ani kontraktów API wypracowanych w LAB1–LAB5 — celem jest opakowanie działającego systemu w przenośne kontenery i zastąpienie ręcznego uruchamiania wielu terminali deklaratywną orkiestracją `Docker Compose`.
+Pracę należy kontynuować w tym samym repozytorium Git. Nie należy zmieniać logiki domenowej, reguł biznesowych ani kontraktów API wypracowanych w LAB1–LAB5 — celem jest opakowanie działającego systemu w przenośne kontenery i zastąpienie ręcznego uruchamiania poszczególnych procesów uruchamianiem kontenerów na podstawie konfiguracji w pliku `compose.yaml`.
 
-### Zestawienie pełnego stosu projektu z LAB1–LAB6
+### Zestawienie wszystkich komponentów projektu z LAB1–LAB6
 
 | Etap | Element systemu | Sposób uruchomienia w LAB1–LAB5 | Sposób uruchomienia i konfiguracji w LAB6 |
 |---|---|---|---|
 | **LAB1** | Pierwsza mikrousługa (FastAPI, modele Pydantic, reguła biznesowa `409`, walidacja `422`) | Lokalny proces Uvicorna (`--port 8101`, domyślny host `127.0.0.1`) | Kontener budowany z własnego `Dockerfile`, nasłuchujący na `--host 0.0.0.0 --port 8101`, dostępny tylko w sieci Docker (`expose: 8101`) |
 | **LAB2** | Baza SQLite (SQLAlchemy) i cache-aside w Redis (`X-Cache`, `TTL`, unieważnianie) | Plik `./app.db` na dysku hosta; pojedynczy kontener lub proces Redis na `localhost:6379` | Plik bazy zapisywany na **nazwanym wolumenie** (`/data/app.db`); kontener `redis` osiągalny pod adresem `redis://redis:6379/0` |
 | **LAB3** | Druga mikrousługa i rejestr Eureka (`:8761`), wywołanie `do_service()` | Osobny terminal Uvicorna (`:8102`), zgłoszenie `INSTANCE_HOST=localhost` do `127.0.0.1:8761` | Kontenery obu usług zgłaszają swoje nazwy usług z `compose.yaml` (`INSTANCE_HOST=service-a`) do `http://eureka:8761` |
-| **LAB4** | Wspólny punkt wejścia API Gateway (`:8080`, `lb://`, `StripPrefix=1`, `X-Gateway`) | Lokalny proces Maven (`mvn spring-boot:run`) na hoście | Kontener `api-gateway` budowany wieloetapowo, nasłuchujący na `0.0.0.0:8080` i publikujący port `127.0.0.1:8080:8080` dla klienta zewnętrznego |
-| **LAB5** | Broker wiadomości RabbitMQ (`:5672` / `:15672`), publikacja i idempotentna konsumpcja | Osobny kontener RabbitMQ wywoływany z hosta przez `127.0.0.1:5672` | Kontener `rabbitmq` we wspólnej sieci `compose.yaml`, osiągalny dla usług pod adresem `amqp://guest:guest@rabbitmq:5672/%2F` |
+| **LAB4** | Bramka API Gateway (`:8080`, `lb://`, `StripPrefix=1`, `X-Gateway`) | Lokalny proces Maven (`mvn spring-boot:run`) na hoście | Kontener `api-gateway` budowany wieloetapowo, nasłuchujący na `0.0.0.0:8080` i publikujący port `127.0.0.1:8080:8080` dla klienta zewnętrznego |
+| **LAB5** | Broker wiadomości RabbitMQ (`:5672` / `:15672`), publikowanie oraz odbieranie i przetwarzanie wiadomości bez powtarzania skutków tego samego zdarzenia | Osobny kontener RabbitMQ wywoływany z hosta przez `127.0.0.1:5672` | Kontener `rabbitmq` we wspólnej sieci `compose.yaml`, osiągalny dla usług pod adresem `amqp://guest:guest@rabbitmq:5672/%2F` |
 | **LAB6** | Cały system mikrousługowy | 5–6 osobnych terminali uruchamianych ręcznie w odpowiedniej kolejności | Jedna definicja `compose.yaml` z kontrolami `healthcheck`, zależnościami `depends_on` i nazwanym wolumenem danych |
 
 Zgodnie z sylabusem przedmiotu na ostatnich zajęciach kompletny kod źródłowy wraz z dokumentacją stanowi podstawę oceny projektu (60% jakość i kompletność kodu — w tym minimum dwie różne mikrousługi na osobę oraz wszystkie wymagane komponenty systemu; 40% jakość dokumentacji).
@@ -116,9 +116,9 @@ flowchart LR
 
         GW -->|"lb://LOCKER-SERVICE<br/>(http://locker-service:8101)"| S1
         GW -->|"lb://PARCEL-SERVICE<br/>(http://parcel-service:8102)"| S2
-        S2 -->|"HTTP przez Eurekę<br/>http://locker-service:8101"| S1
+        S2 -->|"HTTP do usługi odnalezionej w Eurece<br/>http://locker-service:8101"| S1
         S2 -->|"AMQP: rabbitmq:5672"| RMQ
-        RMQ -->|"Konsumpcja + ACK"| S1
+        RMQ -->|"Odbiór i przetwarzanie + ACK"| S1
         S1 <-->|"redis:6379"| RD
         S1 -.->|"http://eureka:8761"| EU
         S2 -.->|"http://eureka:8761"| EU
@@ -133,7 +133,7 @@ flowchart LR
 
 W kontekście wdrażania systemów mikrousługowych należy uporządkować pojęcia z sylabusa:
 
-- **Monorepo vs Multirepo:** rozwijany na laboratoriach projekt wykorzystuje wzorzec **Monorepo** — wszystkie mikrousługi (`service-a`, `service-b`), komponent `gateway` oraz wspólny plik `compose.yaml` znajdują się w jednym repozytorium Git, co ułatwia spójne wersjonowanie (tagi `lab1`–`lab6`) i atomowe testy integracyjne. W dużych organizacjach stosuje się również **Multirepo** (osobne repozytorium i osobny potok CI/CD dla każdej mikrousługi), co zwiększa autonomię zespołów, ale wymaga osobnej koordynacji wersji kontraktów API.
+- **Monorepo vs Multirepo:** rozwijany na laboratoriach projekt wykorzystuje wzorzec **Monorepo** — wszystkie mikrousługi (`service-a`, `service-b`), komponent `gateway` oraz wspólny plik `compose.yaml` znajdują się w jednym repozytorium Git, co ułatwia spójne wersjonowanie (tagi `lab1`–`lab6`) oraz testowanie zgodności usług po zmianach zapisanych w jednym commicie. W dużych organizacjach stosuje się również **Multirepo** (osobne repozytorium i osobny potok CI/CD dla każdej mikrousługi), co zwiększa autonomię zespołów, ale wymaga osobnej koordynacji wersji kontraktów API.
 - **Rola CI/CD (*Continuous Integration / Continuous Delivery*):** w zautomatyzowanym potoku CI każda zmiana kodu uruchamia najpierw szybkie testy jednostkowe z atrapami (`MemoryRedis`, `FakeEurekaClient`, `InMemoryEventBroker`), następnie buduje obrazy kontenerowe (`docker build`) i wykonuje testy integracyjne na uruchomionym środowisku kontenerowym.
 - **Docker Compose vs Kubernetes:** `Docker Compose` służy do deklaratywnego uruchamiania wielu kontenerów na **jednej maszynie** (lokalnej lub testowej). W środowiskach produkcyjnych do zarządzania kontenerami na klastrze wielu serwerów stosuje się orkiestratory takie jak **Kubernetes**, gdzie podstawową jednostką wdrożenia jest **Pod**, liczbą replik i aktualizacjami zarządza **Deployment**, a stabilną adresację sieciową i równoważenie obciążenia zapewnia obiekt **Service** oraz **Ingress / Gateway API**.
 
@@ -226,7 +226,7 @@ curl.exe -i http://127.0.0.1:8101/lockers/KRK-1024
 
 powinna zakończyć się odmową połączenia, ponieważ mikrousługi nie publikują swoich portów na hoście (`expose` zamiast `ports`) i są dostępne wyłącznie wewnątrz sieci Docker Compose za pośrednictwem bramki API Gateway!
 
-### Krok 3. Uruchomienie testów integracyjnych przeciwko kontenerom (pytest / HTTPX)
+### Krok 3. Uruchomienie testów integracyjnych usług działających w kontenerach (pytest / HTTPX)
 
 W katalogu `lab6-support` należy utworzyć środowisko dla klienta testowego i uruchomić testy:
 
@@ -292,7 +292,7 @@ Następnie należy wykonać i udokumentować sześć scenariuszy weryfikacyjnych
 | **1. Start i rejestracja kontenerów** | `docker compose ps` oraz sprawdzenie panelu `http://127.0.0.1:8761/` | Wszystkie kontenery mają status `Up` / `(healthy)`, a obie usługi własne widnieją w Eurece ze statusem `UP` i nazwami hostów z sieci Docker Compose |
 | **2. Izolacja sieciowa usług za bramką** | Wywołanie `curl.exe -i http://127.0.0.1:8080/api/...` oraz próba wywołania `http://127.0.0.1:8101/...` z hosta | Żądanie przez bramkę (`:8080`) zwraca `200 OK` z `X-Gateway: lab4`, natomiast bezpośredni port usługi (`:8101`) jest niedostępny z hosta |
 | **3. Przepływ synchroniczny, walidacja i cache (LAB1–LAB4)** | Wykonanie przez bramkę odczytu (MISS → HIT), zapisu, błędnego zapisu (`409`/`422`) oraz wywołania usługa–usługa z LAB3 | Zachowanie wszystkich kodów HTTP, nagłówków `X-Gateway` i `X-Cache` oraz komunikacji między kontenerami usług |
-| **4. Przepływ asynchroniczny przez RabbitMQ (LAB5)** | Wywołanie przez bramkę operacji publikującej zdarzenie, sprawdzenie panelu `15672` i uruchomienie konsumpcji | Wiadomość przechodzi przez kontener `rabbitmq`, zostaje przetworzona idempotentnie przez konsumenta i unieważnia cache w kontenerze `redis` |
+| **4. Przepływ asynchroniczny przez RabbitMQ (LAB5)** | Wywołanie przez bramkę operacji publikującej zdarzenie, sprawdzenie panelu `15672` i uruchomienie odbierania i przetwarzania wiadomości | Wiadomość przechodzi przez kontener `rabbitmq`, zostaje przetworzona idempotentnie przez konsumenta i unieważnia cache w kontenerze `redis` |
 | **5. Trwałość danych na wolumenie po odtworzeniu kontenerów** | Utworzenie/zmiana rekordu przez bramkę, wykonanie `docker compose down`, a następnie `docker compose up -d` i ponowny odczyt rekordu przez bramkę | Rekord zapisany w SQLite na nazwanym wolumenie przetrwał usunięcie i ponowne utworzenie kontenerów (mimo że cache w Redis uległ wyczyszczeniu i pierwszy odczyt zwraca `X-Cache: MISS`) |
 | **6. Restart pojedynczego kontenera usługi** | Wykonanie `docker compose restart <nazwa-uslugi>`, sprawdzenie `docker compose logs --tail=30 <nazwa-uslugi>` i ponowny odczyt przez bramkę | Kontener uruchamia się ponownie, odnawia rejestrację w Eurece i wznawia obsługę żądań bez restartu pozostałych kontenerów |
 
@@ -301,7 +301,7 @@ Następnie należy wykonać i udokumentować sześć scenariuszy weryfikacyjnych
 Należy uruchomić:
 
 1. **Testy jednostkowe usług (z LAB1–LAB5)** — potwierdzając, że nadal przechodzą w izolacji,
-2. **Testy integracyjne przez bramkę (`pytest tests/integration -q`)** — wykonywane z hosta przeciwko skonteneryzowanemu środowisku uruchomionemu przez `docker compose up -d`.
+2. **Testy integracyjne przez bramkę (`pytest tests/integration -q`)** — wykonywane na komputerze gospodarza i wysyłające żądania do usług w kontenerach uruchomionych przez `docker compose up -d`.
 
 Następnie należy uzupełnić główny plik `README.md` projektu o sekcję LAB6 na podstawie szablonu `README-LAB6-template.md` oraz upewnić się, że cała dokumentacja projektu z LAB1–LAB6 tworzy spójną całość gotową do oceny końcowej.
 
@@ -327,9 +327,9 @@ Następnie należy uzupełnić główny plik `README.md` projektu o sekcję LAB6
 |---|---|
 | **Punkt A — budowanie i start (`compose.yaml`)** | Całe środowisko projektu uruchamia się poleceniem `docker compose up --build -d`, a wszystkie kontenery osiągają stan `Up` / `(healthy)` |
 | **Punkt B — izolacja sieciowa i adresacja** | Dostęp klienta zewnętrznego odbywa się przez port bramki (`127.0.0.1:8080`), porty mikrousług są nieopublikowane na hoście (`expose`), a usługi komunikują się po nazwach z sieci Docker Compose |
-| **Punkt C — pełny przepływ LAB1–LAB5 w kontenerach** | Przez skonteneryzowaną bramkę działają: walidacja i reguła biznesowa (LAB1), zapis do SQLite i cache Redis z `X-Cache` (LAB2), wywołanie przez Eurekę (LAB3), routing z `X-Gateway` (LAB4) oraz zdarzenia w RabbitMQ (LAB5) |
+| **Punkt C — pełny przepływ LAB1–LAB5 w kontenerach** | Przez skonteneryzowaną bramkę działają: walidacja i reguła biznesowa (LAB1), zapis do SQLite i cache Redis z `X-Cache` (LAB2), wywołanie usługi odnalezionej w Eurece (LAB3), routing z `X-Gateway` (LAB4) oraz zdarzenia w RabbitMQ (LAB5) |
 | **Punkt D — trwałość wolumenu** | Dane zapisane w bazie SQLite przetrwają wykonanie `docker compose down` oraz ponowne `docker compose up -d` |
-| **Punkt E — testy i dokumentacja końcowa** | Przechodzą testy jednostkowe i integracyjne przeciwko kontenerom, a dokumentacja README kompletnie opisuje cały system |
+| **Punkt E — testy i dokumentacja końcowa** | Przechodzą testy jednostkowe oraz testy integracyjne usług działających w kontenerach, a dokumentacja README kompletnie opisuje cały system |
 
 ### Pytania do rozmowy technicznej podczas odbioru
 
@@ -351,7 +351,7 @@ Punktacja zachowuje proporcję z sylabusa przedmiotu: **60 punktów za kod** ora
 | **Kod** | Poprawne pliki `Dockerfile` i `.dockerignore` dla mikrousług oraz bramki (warstwy cache, multi-stage build, `--host 0.0.0.0`) | 15 |
 | **Kod** | Kompletny plik `compose.yaml` z siecią wewnętrzną (`expose` vs `ports`), kontrolami `healthcheck`, `depends_on` i nazwanym wolumenem bazy danych | 20 |
 | **Kod** | Działanie wszystkich mechanizmów z LAB1–LAB5 w środowisku kontenerowym (SQLite na wolumenie, Redis, Eureka, API Gateway, RabbitMQ) | 15 |
-| **Kod** | Przechodzące testy integracyjne uruchamiane przeciwko skonteneryzowanemu systemowi oraz zachowane testy jednostkowe | 10 |
+| **Kod** | Przechodzące testy integracyjne systemu uruchomionego w kontenerach oraz zachowane testy jednostkowe | 10 |
 | **Dokumentacja** | Pełny diagram architektury kontenerowej, tabela usług, portów, zmiennych środowiskowych i wolumenów | 10 |
 | **Dokumentacja** | Powtarzalna instrukcja zbudowania, uruchomienia, przetestowania i zatrzymania całego systemu (`up`, `ps`, `logs`, `down`, `down -v`) | 10 |
 | **Dokumentacja** | Udokumentowane wyniki sześciu scenariuszy weryfikacyjnych (w tym izolacji portów oraz trwałości wolumenu po `down`/`up`) | 10 |
